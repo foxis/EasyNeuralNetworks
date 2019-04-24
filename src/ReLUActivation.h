@@ -14,7 +14,7 @@ public:
 
 	inline virtual T forward(T val) const
 	{
-		return val >= 0 ? val : 0;
+		return val >= 0 ? val : _negative_d * val;
 	}
 
 	inline virtual T backward(T val) const

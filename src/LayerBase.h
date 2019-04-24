@@ -32,10 +32,11 @@ public:
 			}
 	}
 
-	inline void apply_backward_inplace(T * a, size_t num) const {
+	inline void apply_backward_inplace(T * d, const T * o, size_t num) const {
 		for (size_t i = 0; i < num; i++) {
-			*a = backward(*a);
-			++a;
+			*d = *d * backward(*o);
+			++d;
+			++o;
 		}
 	}
 };

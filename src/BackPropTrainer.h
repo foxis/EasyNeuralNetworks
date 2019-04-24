@@ -15,7 +15,7 @@ public:
 private:
 	typedef LayerBase<T, BIAS, T_SIZE>* T_LAYER;
 
-	std::vector<T *> delta_out;
+	T * delta_out;
 	T mean_error;
 	T alpha;
 	T beta;
@@ -34,8 +34,7 @@ public:
 	virtual void init(const std::vector<const T*> &inputs, const std::vector<const T*> &outputs, std::vector<T_LAYER> &layers) override {
 		TrainerBase<T, BIAS, T_SIZE>::init(inputs, outputs, layers);
 
-		for (size_t i = 0; i < inputs.size(); i++)
-			delta_out.push_back((T*)malloc(this->num_outputs * sizeof(T)));
+		delta_out = (T*)malloc(this->num_outputs * sizeof(T));
 
 		typename std::vector<T_LAYER>::iterator I = this->layers.begin();
 
@@ -54,12 +53,8 @@ public:
 	}
 
 	virtual void clean() {
-		typename std::vector<T*>::iterator I = delta_out.begin();
 		typename std::vector<T_LAYER>::iterator L = this->layers.begin();
-		while (I != delta_out.end()) {
-			free(*I);
-			++I;
-		}
+		free(delta_out);
 		// free layer error arrays
 		while (L != this->layers.end()) {
 			if ((*L)->errors() != NULL)
@@ -85,7 +80,9 @@ public:
 	void fit_epoch() {
 		typename std::vector<const T*>::iterator I = this->inputs.begin();
 		typename std::vector<const T*>::iterator O = this->outputs.begin();
-		typename std::vector<T*>::iterator delta = delta_out.begin();
+		typename std::vector<T_LAYER>::reverse_iterator L;
+		T_LAYER prev = NULL;
+		T* errors;
 
 		mean_error = 0;
 		while (I != this->inputs.end() && O != this->outputs.end()) {
@@ -95,28 +92,21 @@ public:
 			this->evaluate();
 
 			// calculate output error
-			this->diff_arr(*delta, *O, this->last->outputs(), this->num_outputs);
+			this->diff_arr(delta_out, *O, this->last->outputs(), this->num_outputs);
 
 			// calculate error
-			discrepancy = this->sqrsum_arr(*delta, this->num_outputs);
+			discrepancy = this->sqrsum_arr(delta_out, this->num_outputs);
 			mean_error += discrepancy;
 
 			++O;
 			++I;
-			++delta;
-		}
-		mean_error /= (T)this->inputs.size();
 
-		// backpropagate
-		delta = delta_out.begin();
-		while (delta != delta_out.end()) {
-			typename std::vector<T_LAYER>::reverse_iterator L = this->layers.rbegin();
-			T_LAYER prev = NULL;
-			T* errors;
-
+			// backpropagate
+			prev = NULL;
+			L = this->layers.rbegin();
 			while (L != this->layers.rend()) {
 				if (prev == NULL) {
-					errors = *delta;
+					errors = delta_out;
 				} else {
 					errors = prev->errors();
 				}
@@ -130,7 +120,7 @@ public:
 			L = this->layers.rbegin();
 			while (L != this->layers.rend()) {
 				if (prev == NULL) {
-					errors = *delta;
+					errors = delta_out;
 				} else {
 					errors = prev->errors();
 				}
@@ -138,9 +128,8 @@ public:
 				prev = *L;
 				++L;
 			}
-
-			++delta;
 		}
+		mean_error /= (T)this->inputs.size();
 	}
 };
 

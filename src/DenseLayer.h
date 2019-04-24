@@ -100,23 +100,47 @@ public:
 	virtual void backwards(T * deltas)
 	{
 		T * i_p = _errors;
-		T * j_p;
+		T * d_p;
 		T * w_p;
 		T delta;
+/** /
+		Serial.print("t - o: ");
+		for (int i = 0 ; i < this->_num_outputs; i ++) {
+			Serial.print(deltas[i]); Serial.print(" ");
+		}
+		Serial.print("  in: ");
+		for (int i = 0 ; i < this->_num_inputs; i ++) {
+			Serial.print(this->inputs()[i]); Serial.print(" ");
+		}
+		Serial.print("  weights: ");
+		for (int i = 0 ; i < this->num_weights(); i ++) {
+			Serial.print(this->weights()[i]); Serial.print(" ");
+		}
+		Serial.print("  out: ");
+		for (int i = 0 ; i < this->_num_outputs; i ++) {
+			Serial.print(this->outputs()[i]); Serial.print(" ");
+		}
+		Serial.println();
 
+		Serial.print("delta: ");
+		for (int i = 0 ; i < this->_num_outputs; i ++) {
+			Serial.print(deltas[i]); Serial.print(" ");
+		}
+		Serial.println();
+/***/
 		// apply activation derivative
-		this->_activation.apply_backward_inplace(deltas, this->_num_outputs);
+		this->_activation.apply_backward_inplace(deltas, this->outputs(), this->_num_outputs);
 
 		// iterate over inputs
 		for (T_SIZE i = 0; i < this->_num_inputs; i++) {
 			w_p = _weights + i;
-			j_p = deltas;
+			d_p = deltas;
 			delta = 0;
 			// iterate over outputs
 			for (T_SIZE j = 0; j < this->_num_outputs; j++) {
-				delta += *j_p * *w_p;
-				++j_p;
-				w_p += this->_num_inputs;
+				delta += *d_p * *w_p;
+				++d_p;
+				w_p += (this->_num_inputs + (BIAS?1:0));
 			}
 			*i_p = delta;
 			++i_p;
@@ -132,28 +156,26 @@ public:
 		const T * e_p = deltas;
 		T * w_p = _weights;
 
-//		Serial.println("backwards: ");
-//		for (int i = 0 ; i < this->_num_outputs; i ++) {
-//			Serial.println(deltas[i]);
-	//		Serial.println(this->outputs()[i]);
-		//}
+//		Serial.print("change: ");
 
 		// iterate over output errors
 		for (T_SIZE j = 0; j < this->_num_outputs; j++) {
 			// iterate over inputs
 			i_p = this->_inputs;
 			for (T_SIZE i = 0; i < this->_num_inputs; i++) {
-					*w_p -= alpha * *e_p * *i_p;
+//					Serial.print(alpha * *e_p * *i_p); Serial.print(" ");
+					*w_p += alpha * *e_p * *i_p;
 					++i_p;
 					++w_p;
 			}
 			// update bias
 			if (BIAS) {
-				*w_p -= alpha * *e_p;
+				*w_p += alpha * *e_p;
 				++w_p;
 			}
 			++e_p;
 		}
+//		Serial.println();
 	}
 
 };

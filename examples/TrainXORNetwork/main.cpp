@@ -4,6 +4,7 @@
 using namespace EasyNeuralNetworks;
 
 TanhActivation<float> activation;
+//SigmoidActivation<float> activation;
 
 InputLayer<float> input(2);
 DenseLayer<float> hidden(input, 5, activation);
