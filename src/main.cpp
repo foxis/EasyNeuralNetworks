@@ -11,7 +11,7 @@ DenseLayer<float> output(hidden, 1, sigma);
 
 NeuralNetwork<float> nn(3, &input, &hidden, &output);
 
-BackPropTrainer<float> trainer;
+BackPropTrainer<float> trainer(0.5, .001);
 
 float inputs[] = {
 	0,0,

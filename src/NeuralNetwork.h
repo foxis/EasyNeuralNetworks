@@ -17,6 +17,7 @@ namespace EasyNeuralNetworks {
 
 template<typename T, bool BIAS, typename T_SIZE>
 class TrainerBase {
+protected:
 	typedef LayerBase<T, BIAS, T_SIZE>* T_LAYER;
 	std::vector<const T*> inputs;
 	std::vector<const T*> outputs;

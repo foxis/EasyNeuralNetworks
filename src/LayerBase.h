@@ -46,6 +46,7 @@ public:
 ///
 template <typename T, bool BIAS, typename T_SIZE>
 class LayerBase {
+protected:
 	T_SIZE _num_inputs;
 	T_SIZE _num_outputs;
 	T* _inputs;
@@ -127,7 +128,9 @@ public:
 	///
 	/// will update the weights calculated in backwards
 	///
-	virtual void update() = 0;
+	/// alpha is the multiplier determining how much to adjust the weights
+	/// based on errors
+	virtual void update(const T * errors, T alpha) = 0;
 
 
 	///

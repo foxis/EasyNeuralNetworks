@@ -43,7 +43,7 @@ public:
 	virtual inline const T* errors() const { return _errors; }
 	virtual inline T* errors() { return _errors; }
 	virtual inline void errors(T * errors)  { _errors = errors; }
-	virtual inline T_SIZE num_errors() const { return _num_inputs; }
+	virtual inline T_SIZE num_errors() const { return this->_num_inputs; }
 
 
 	///
@@ -52,7 +52,7 @@ public:
 	virtual inline const T* weights() const { return _weights; };
 	virtual inline T* weights() { return _weights; };
 	virtual inline void weights(T * weights) { _weights = weights; };
-	virtual inline T_SIZE num_weights() const { return (_num_inputs + (BIAS?1:0)) * _num_outputs; }
+	virtual inline T_SIZE num_weights() const { return (this->_num_inputs + (BIAS?1:0)) * this->_num_outputs; }
 
 	///
 	/// performs a forward calculation
@@ -72,10 +72,10 @@ public:
 		T * out_p;
 
 		// iterate over outputs
-		for (j = 0, out_p = _outputs, w_p = _weights; j < _num_outputs; j++) {
+		for (j = 0, out_p = this->_outputs, w_p = _weights; j < this->_num_outputs; j++) {
 			acc = 0;
 			// iterate over inputs
-			for (i = 0, in_p = _inputs; i < _num_inputs; i++) {
+			for (i = 0, in_p = this->_inputs; i < this->_num_inputs; i++) {
 				acc += (*in_p) * (*w_p);
 
 				++in_p;
@@ -85,7 +85,7 @@ public:
 				acc += (*w_p);
 				++w_p;
 			}
-			*out_p = _activation.forward(acc);
+			*out_p = this->_activation.forward(acc);
 			++out_p;
 		}
 	}
@@ -104,18 +104,18 @@ public:
 		T * w_p;
 		T delta;
 		// apply activation derivative
-		_activation.apply_backwards_inplace(errors, _num_outputs);
+		this->_activation.apply_backward_inplace(errors, this->_num_outputs);
 
 		// iterate over inputs
-		for (T_SIZE i = 0; i < _num_inputs; i++) {
+		for (T_SIZE i = 0; i < this->_num_inputs; i++) {
 			w_p = _weights + i;
 			j_p = errors;
 			delta = 0;
 			// iterate over outputs
-			for (T_SIZE j = 0; j < _num_outputs; j++) {
+			for (T_SIZE j = 0; j < this->_num_outputs; j++) {
 				delta += *j_p * *w_p;
 				++j_p;
-				w_p += _num_inputs;
+				w_p += this->_num_inputs;
 			}
 			*i_p = delta;
 			++i_p;
@@ -125,9 +125,28 @@ public:
 	///
 	/// will update the weights calculated in backwards
 	///
-	virtual void update()
+	virtual void update(const T * errors, T alpha)
 	{
+		T * i_p;
+		T * e_p = errors;
+		T * w_p = _weights;
 
+		// iterate over output errors
+		for (T_SIZE j = 0; j < this->_num_outputs; j++) {
+			// iterate over inputs
+			i_p = this->_inputs;
+			for (T_SIZE i = 0; i < this->_num_inputs; i++) {
+					*w_p -= alpha * *e_p * *i_p;
+					++i_p;
+					++w_p;
+			}
+			// update bias
+			if (BIAS) {
+				*w_p -= alpha * *e_p;
+				++w_p;
+			}
+			++e_p;
+		}
 	}
 
 };

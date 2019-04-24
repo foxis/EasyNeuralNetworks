@@ -23,7 +23,10 @@ public:
 	///
 	/// returns a pointer to errors
 	///
+	virtual inline const T* errors() const { return NULL; }
 	virtual inline T* errors() { return NULL; }
+	virtual inline void errors(T * errors)  { }
+	virtual inline T_SIZE num_errors() const { return 0; }
 
 	///
 	/// returns a pointer to weights
@@ -31,6 +34,7 @@ public:
 	virtual inline const T* weights() const { return NULL; };
 	virtual inline T* weights() { return NULL; };
 	virtual inline void weights(T * weights) { };
+	virtual inline T_SIZE num_weights() const { return 0; }
 
 	///
 	/// performs a forward calculation
@@ -43,14 +47,14 @@ public:
 	/// performs error back propagation.
 	/// will calculate errors for the inputs.
 	///
-	virtual void backwards(const T * errors)
+	virtual void backwards(T * errors)
 	{
 	}
 
 	///
 	/// will update the weights calculated in backwards
 	///
-	virtual void update()
+	virtual void update(const T * errors, T alpha)
 	{
 	}
 };
