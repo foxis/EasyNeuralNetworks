@@ -11,7 +11,16 @@ DenseLayer<float> output(hidden, 1, sigma);
 
 NeuralNetwork<float> nn(3, &input, &hidden, &output);
 
-BackPropTrainer<float> trainer(0.5, .001);
+BackPropTrainer<float> trainer(0.05, .000001, [](float error, size_t epoch, void * data) {
+	if (epoch % 100) {
+		Serial.print("Epoch ");
+		Serial.print(epoch);
+		Serial.print(", error ");
+		Serial.println(error);
+		delay(100);
+	}
+	return true;
+});
 
 float inputs[] = {
 	0,0,
@@ -28,7 +37,7 @@ void setup() {
 	Serial.println("Testing Training XOR NN with 3 hidden neurons...");
 
 	unsigned long now = micros();
-	nn.train((float*)inputs, (float*)outputs, 4, trainer, 1000);
+	nn.train((float*)inputs, (float*)outputs, 4, trainer, 10000);
 	now = micros() - now;
 	Serial.print("Trained in: "); Serial.print(now); Serial.println("us");
 }

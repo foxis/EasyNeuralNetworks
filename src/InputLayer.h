@@ -12,9 +12,8 @@ template <typename T = ENN_DEFAULT_TYPE,
 class InputLayer : public LayerBase<T, BIAS, T_SIZE> {
 public:
 	InputLayer(T_SIZE num_inputs) : LayerBase<T, BIAS, T_SIZE>(NULL, num_inputs, NULL, num_inputs, LUActivation<T>()) {
-		T * p = (T*)malloc(sizeof(T) * num_inputs);
-		this->inputs(p);
-		this->outputs(p);
+		this->inputs((T*)malloc(sizeof(T) * num_inputs));
+		this->outputs(this->inputs());
 	}
 
 	InputLayer(T * p, T_SIZE num_inputs) : LayerBase<T, BIAS, T_SIZE>(p, num_inputs, p, num_inputs, LUActivation<T>()) {
@@ -47,14 +46,14 @@ public:
 	/// performs error back propagation.
 	/// will calculate errors for the inputs.
 	///
-	virtual void backwards(T * errors)
+	virtual void backwards(T * deltas)
 	{
 	}
 
 	///
 	/// will update the weights calculated in backwards
 	///
-	virtual void update(const T * errors, T alpha)
+	virtual void update(const T * deltas, T alpha)
 	{
 	}
 };

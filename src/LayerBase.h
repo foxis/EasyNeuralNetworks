@@ -22,17 +22,17 @@ namespace EasyNeuralNetworks {
 template<typename T>
 class ActivationBase {
 public:
-	inline virtual T forward(T val) const = 0;
-	inline virtual T backward(T val) const = 0;
+	virtual T forward(T val) const = 0;
+	virtual T backward(T val) const = 0;
 
-	inline void apply_forward_inplace(T * a, size_t num) {
+	inline void apply_forward_inplace(T * a, size_t num) const {
 			for (size_t i = 0; i < num; i++) {
 				*a = forward(*a);
 				++a;
 			}
 	}
 
-	inline void apply_backward_inplace(T * a, size_t num) {
+	inline void apply_backward_inplace(T * a, size_t num) const {
 		for (size_t i = 0; i < num; i++) {
 			*a = backward(*a);
 			++a;
@@ -101,18 +101,18 @@ public:
 	///
 	/// returns a pointer to errors
 	///
-	virtual inline const T* errors() const = 0;
-	virtual inline T* errors() = 0;
-	virtual inline void errors(T * errors) = 0;
-	virtual inline T_SIZE num_errors() const = 0;
+	virtual const T* errors() const = 0;
+	virtual T* errors() = 0;
+	virtual void errors(T * errors) = 0;
+	virtual T_SIZE num_errors() const = 0;
 
 	///
 	/// returns a pointer to weights
 	///
-	virtual inline const T* weights() const = 0;
-	virtual inline T* weights() = 0;
-	virtual inline void weights(T * weights) = 0;
-	virtual inline T_SIZE num_weights() const = 0;
+	virtual const T* weights() const = 0;
+	virtual T* weights() = 0;
+	virtual void weights(T * weights) = 0;
+	virtual T_SIZE num_weights() const = 0;
 
 	///
 	/// performs a forward calculation
@@ -123,14 +123,14 @@ public:
 	/// performs error back propagation.
 	/// will calculate errors for the inputs.
 	/// will modify errors inplace
-	virtual void backwards(T * errors) = 0;
+	virtual void backwards(T * deltas) = 0;
 
 	///
 	/// will update the weights calculated in backwards
 	///
 	/// alpha is the multiplier determining how much to adjust the weights
 	/// based on errors
-	virtual void update(const T * errors, T alpha) = 0;
+	virtual void update(const T * deltas, T alpha) = 0;
 
 
 	///

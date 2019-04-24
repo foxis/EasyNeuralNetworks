@@ -9,6 +9,10 @@ namespace EasyNeuralNetworks {
 
 template<typename T, bool BIAS = ENN_DEFAULT_BIAS, typename T_SIZE = ENN_DEFAULT_SIZE_TYPE>
 class BackPropTrainer : public TrainerBase<T, BIAS, T_SIZE> {
+public:
+	typedef std::function<bool (T error, size_t epoch, void * data)> EpochCallback_t;
+
+private:
 	typedef LayerBase<T, BIAS, T_SIZE>* T_LAYER;
 
 	std::vector<T *> delta_out;
@@ -16,14 +20,18 @@ class BackPropTrainer : public TrainerBase<T, BIAS, T_SIZE> {
 	T alpha;
 	T beta;
 	T current_alpha;
+	EpochCallback_t callback;
+	void * callback_data;
 
 public:
-	BackPropTrainer(T alpha, T beta) : TrainerBase<T, BIAS, T_SIZE>() {
+	BackPropTrainer(T alpha, T beta, EpochCallback_t callback = NULL, void * callback_data = NULL) : TrainerBase<T, BIAS, T_SIZE>() {
 		this->alpha = alpha;
 		this->beta = beta;
+		this->callback = callback;
+		this->callback_data = callback_data;
 	}
 
-	virtual void init(const std::vector<const T*> &inputs, const std::vector<const T*> &outputs, std::vector<T_LAYER> &layers) {
+	virtual void init(const std::vector<const T*> &inputs, const std::vector<const T*> &outputs, std::vector<T_LAYER> &layers) override {
 		TrainerBase<T, BIAS, T_SIZE>::init(inputs, outputs, layers);
 
 		for (size_t i = 0; i < inputs.size(); i++)
@@ -31,11 +39,10 @@ public:
 
 		typename std::vector<T_LAYER>::iterator I = this->layers.begin();
 
-		while (I != layers.end()) {
+		while (I != this->layers.end()) {
 			// initialize weights to random
-			for (T_SIZE i = 0; i < (*I)->num_weights(); i++) {
+			for (T_SIZE i = 0; i < (*I)->num_weights(); i++)
 				(*I)->weights()[i] = .5 - (rand() / (T)RAND_MAX);
-			}
 			// initialize error arrays
 			if ((*I)->num_errors())
 				(*I)->errors((T*)malloc(sizeof(T) * (*I)->num_errors()));
@@ -55,7 +62,7 @@ public:
 		}
 		// free layer error arrays
 		while (L != this->layers.end()) {
-			if ((*I)->errors() != NULL)
+			if ((*L)->errors() != NULL)
 				free((*L)->errors());
 			(*L)->errors(NULL);
 			++L;
@@ -67,8 +74,11 @@ public:
 			fit_epoch();
 			// adjust parameters
 			current_alpha -= current_alpha * beta;
-			// call callback
-			// check termination criteria
+
+			if (callback != NULL) {
+				if (!callback(mean_error, epoch, callback_data))
+					break;
+			}
 		}
 	}
 
@@ -78,17 +88,17 @@ public:
 		typename std::vector<T*>::iterator delta = delta_out.begin();
 
 		mean_error = 0;
-		while (I != this->inputs.end() && O != this->outputs.eng()) {
+		while (I != this->inputs.end() && O != this->outputs.end()) {
 			T discrepancy ;
 			// evaluate input/output pair
 			memcpy(this->first->inputs(), *I, sizeof(T) * this->num_inputs);
 			this->evaluate();
 
 			// calculate output error
-			diff_arr(*delta, *O, this->last->outputs());
+			this->diff_arr(*delta, *O, this->last->outputs(), this->num_outputs);
 
 			// calculate error
-			discrepancy = sqrsum_arr(*delta);
+			discrepancy = this->sqrsum_arr(*delta, this->num_outputs);
 			mean_error += discrepancy;
 
 			++O;
@@ -108,7 +118,7 @@ public:
 				if (prev == NULL) {
 					errors = *delta;
 				} else {
-					errors = prev.errors();
+					errors = prev->errors();
 				}
 				(*L)->backwards(errors);
 				prev = *L;
@@ -122,7 +132,7 @@ public:
 				if (prev == NULL) {
 					errors = *delta;
 				} else {
-					errors = prev.errors();
+					errors = prev->errors();
 				}
 				(*L)->update(errors, current_alpha);
 				prev = *L;

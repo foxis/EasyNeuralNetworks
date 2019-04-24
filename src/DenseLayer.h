@@ -17,23 +17,23 @@ class DenseLayer : public LayerBase<T, BIAS, T_SIZE> {
 public:
 	DenseLayer(T_SIZE num_inputs, T_SIZE num_outputs, const ActivationBase<T>& activation)
 		: LayerBase<T, BIAS, T_SIZE>(NULL, num_inputs, NULL, num_outputs, activation) {
-		_weights = (T*)malloc(sizeof(T) * (num_inputs + (BIAS?1:0)) * num_outputs);
+		this->weights((T*)malloc(sizeof(T) * this->num_weights()));
 		this->outputs((T*)malloc(sizeof(T) * num_outputs));
 		this->inputs((T*)malloc(sizeof(T) * num_inputs));
 	}
 	DenseLayer(LayerBase<T, BIAS, T_SIZE> &input, T_SIZE num_outputs, const ActivationBase<T>& activation)
 		: LayerBase<T, BIAS, T_SIZE>(input, NULL, num_outputs, activation) {
-		_weights = (T*)malloc(sizeof(T) * (input.num_inputs() + (BIAS?1:0)) * num_outputs);
+		this->weights((T*)malloc(sizeof(T) * this->num_weights()));
 		this->outputs((T*)malloc(sizeof(T) * num_outputs));
 	}
 	DenseLayer(LayerBase<T, BIAS, T_SIZE> &input, T * weights, T_SIZE num_outputs, const ActivationBase<T>& activation)
 		: LayerBase<T, BIAS, T_SIZE>(input, NULL, num_outputs, activation) {
-		_weights = weights;
+		this->weights(weights);
 		this->outputs((T*)malloc(sizeof(T) * num_outputs));
 	}
 	DenseLayer(LayerBase<T, BIAS, T_SIZE> &input, const ProgmemHelper<T> & weights, T_SIZE num_outputs, const ActivationBase<T>& activation)
 		: LayerBase<T, BIAS, T_SIZE>(input, NULL, num_outputs, activation) {
-		_weights = weights.read((input.num_inputs() + (BIAS?1:0)) * num_outputs);
+		this->weights(weights.read(this->num_weights()));
 		this->outputs((T*)malloc(sizeof(T) * num_outputs));
 	}
 
@@ -97,19 +97,20 @@ public:
 	/// errors are from previous layer for each output.
 	///  will calculate errors for the next layer
 	/// size of errors should be the same as number of output errors
-	virtual void backwards(T * errors)
+	virtual void backwards(T * deltas)
 	{
 		T * i_p = _errors;
 		T * j_p;
 		T * w_p;
 		T delta;
+
 		// apply activation derivative
-		this->_activation.apply_backward_inplace(errors, this->_num_outputs);
+		this->_activation.apply_backward_inplace(deltas, this->_num_outputs);
 
 		// iterate over inputs
 		for (T_SIZE i = 0; i < this->_num_inputs; i++) {
 			w_p = _weights + i;
-			j_p = errors;
+			j_p = deltas;
 			delta = 0;
 			// iterate over outputs
 			for (T_SIZE j = 0; j < this->_num_outputs; j++) {
@@ -125,11 +126,17 @@ public:
 	///
 	/// will update the weights calculated in backwards
 	///
-	virtual void update(const T * errors, T alpha)
+	virtual void update(const T * deltas, T alpha)
 	{
 		T * i_p;
-		T * e_p = errors;
+		const T * e_p = deltas;
 		T * w_p = _weights;
+
+//		Serial.println("backwards: ");
+//		for (int i = 0 ; i < this->_num_outputs; i ++) {
+//			Serial.println(deltas[i]);
+	//		Serial.println(this->outputs()[i]);
+		//}
 
 		// iterate over output errors
 		for (T_SIZE j = 0; j < this->_num_outputs; j++) {
