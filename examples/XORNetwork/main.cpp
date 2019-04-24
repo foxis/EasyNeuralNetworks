@@ -3,7 +3,7 @@
 
 using namespace EasyNeuralNetworks;
 
-TanhActivation<float> tanh;
+TanhActivation<float> tanha;
 
 ///
 /// Weights from: https://towardsdatascience.com/tflearn-soving-xor-with-a-2x2x1-feed-forward-neural-network-6c07d88689ed
@@ -12,18 +12,18 @@ float weights[] PROGMEM = {
 	3.86708593, 3.87053323, -1.82562542,
   -3.11288071, -3.1126008, 4.58438063
 };
-float weights[] PROGMEM = {
+float weights1[] PROGMEM = {
 	5.19325304, 5.19325304, -4.87336922
 };
 
 InputLayer<float> input(2);
-DenseLayer<float> hidden(input, ProgmemHelper<float>(weights), 2, tanh);
-DenseLayer<float> output(hidden, ProgmemHelper<float>(weights1), 1, tanh);
+DenseLayer<float> hidden(input, ProgmemHelper<float>(weights), 2, tanha);
+DenseLayer<float> output(hidden, ProgmemHelper<float>(weights1), 1, tanha);
 
 NeuralNetwork<float> nn(3, &input, &hidden, &output);
 
 void setup() {
-	Serial.setup(115200);
+	Serial.begin(115200);
 	Serial.println("Testing XOR NN with 2 hidden neurons...");
 }
 
@@ -43,13 +43,13 @@ void loop() {
 		input.inputs()[0] = p[0];
 		input.inputs()[1] = p[1];
 		nn.calculate();
-		o[i] = output.outputs[0];
+		o[i] = output.outputs()[0];
 		p += 2;
 	}
 
 	now = micros() - now;
 
-	Serial.print("Computed in: "); Serial.print(now); Serial.println("ms");
+	Serial.print("Computed in: "); Serial.print(now); Serial.println("us");
 	for (int i = 0; i < 4; i++) {
 		Serial.print("Inputs: ");
 		Serial.print(inputs[i * 2]); Serial.print(", "); Serial.print(inputs[i * 2 + 1]); Serial.println();

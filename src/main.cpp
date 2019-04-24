@@ -1,31 +1,17 @@
 #include <Arduino.h>
 #include <NeuralNetwork.h>
-
+#include <BackPropTrainer.h>
 using namespace EasyNeuralNetworks;
 
-TanhActivation<float> tanh;
-
-///
-/// Weights from: https://towardsdatascience.com/tflearn-soving-xor-with-a-2x2x1-feed-forward-neural-network-6c07d88689ed
-///
-float weights[] = {
-	3.86708593, 3.87053323, -1.82562542,
-  -3.11288071, -3.1126008, 4.58438063
-};
-float weights[] PROGMEM = {
-	5.19325304, 5.19325304, -4.87336922
-};
+SigmoidActivation<float> sigma;
 
 InputLayer<float> input(2);
-DenseLayer<float> hidden(input, ProgmemHelper<float>(weights), 2, tanh);
-DenseLayer<float> output(hidden, ProgmemHelper<float>(weights1), 1, tanh);
+DenseLayer<float> hidden(input, 3, sigma);
+DenseLayer<float> output(hidden, 1, sigma);
 
 NeuralNetwork<float> nn(3, &input, &hidden, &output);
 
-void setup() {
-	Serial.begin(115200);
-	Serial.println("Testing XOR NN with 2 hidden neurons...");
-}
+BackPropTrainer<float> trainer;
 
 float inputs[] = {
 	0,0,
@@ -33,6 +19,19 @@ float inputs[] = {
 	0,1,
 	1,1,
 };
+float outputs[] = {
+	0,1,1,0
+};
+
+void setup() {
+	Serial.begin(115200);
+	Serial.println("Testing Training XOR NN with 3 hidden neurons...");
+
+	unsigned long now = micros();
+	nn.train((float*)inputs, (float*)outputs, 4, trainer, 1000);
+	now = micros() - now;
+	Serial.print("Trained in: "); Serial.print(now); Serial.println("us");
+}
 
 void loop() {
 	float o[4];
@@ -43,13 +42,13 @@ void loop() {
 		input.inputs()[0] = p[0];
 		input.inputs()[1] = p[1];
 		nn.calculate();
-		o[i] = output.outputs[0];
+		o[i] = output.outputs()[0];
 		p += 2;
 	}
 
 	now = micros() - now;
 
-	Serial.print("Computed in: "); Serial.print(now); Serial.println("ms");
+	Serial.print("Computed in: "); Serial.print(now); Serial.println("us");
 	for (int i = 0; i < 4; i++) {
 		Serial.print("Inputs: ");
 		Serial.print(inputs[i * 2]); Serial.print(", "); Serial.print(inputs[i * 2 + 1]); Serial.println();

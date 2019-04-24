@@ -15,15 +15,95 @@
 
 namespace EasyNeuralNetworks {
 
-template<typename T, BIAS, T_SIZE>
+template<typename T, bool BIAS, typename T_SIZE>
 class TrainerBase {
 	typedef LayerBase<T, BIAS, T_SIZE>* T_LAYER;
-	std::vector<T_LAYER> _layers;
+	std::vector<const T*> inputs;
+	std::vector<const T*> outputs;
+	std::vector<T_LAYER> layers;
+	T_SIZE num_inputs;
+	T_SIZE num_outputs;
+	T_LAYER first;
+	T_LAYER last;
 
 public:
-	void init(const std::vector<const T*> &inputs, const std::vector<const T*> &outputs, std::vector<T_LAYER> layers) = 0;
+	TrainerBase()
+	{	}
 
-	void fit(size_t epochs);
+	virtual void init(const std::vector<const T*> &inputs, const std::vector<const T*> &outputs, std::vector<T_LAYER> &layers) {
+		this->inputs = inputs;
+		this->outputs = outputs;
+		this->layers = layers;
+
+		this->first = layers.front();
+		this->last = layers.back();
+
+		this->num_inputs = first->num_inputs();
+		this->num_outputs = last->num_outputs();
+	}
+
+	virtual void clean() = 0;
+
+	virtual void fit(size_t epochs) = 0;
+
+	// helper methods
+	inline void evaluate() {
+		typename std::vector<T_LAYER>::iterator I = layers.begin();
+
+		while (I != layers.end()) {
+			(*I)->forward();
+			++I;
+		}
+	}
+
+	inline void diff_arr(T * dst, const T * a, const T * b, T_SIZE num) {
+		for (T_SIZE i = 0; i < num; i++) {
+			*dst = *a - *b;
+			++a;
+			++dst;
+			++b;
+		}
+	}
+
+	inline void sqrdiff_arr(T * dst, const T * a, const T * b, T_SIZE num) {
+		T tmp;
+		for (T_SIZE i = 0; i < num; i++) {
+			tmp = *a - *b
+			*dst = tmp * tmp;
+			++a;
+			++dst;
+			++b;
+		}
+	}
+
+	inline T dot_arr(const T * a, const T * b, T_SIZE num) {
+		T acc = 0;
+		for (T_SIZE i = 0; i < num; i++) {
+			acc += *a * *b;
+			++a;
+			++b;
+		}
+		return acc;
+	}
+
+	inline T sum_arr(const T * a, T_SIZE num) {
+		T acc = 0;
+		for (T_SIZE i = 0; i < num; i++) {
+			acc += *a;
+			++a;
+		}
+		return acc;
+	}
+
+	inline T sqrsum_arr(const T * a, T_SIZE num) {
+		T acc = 0;
+		for (T_SIZE i = 0; i < num; i++) {
+			acc += *a * *a;
+			++a;
+		}
+		return acc;
+	}
+
 };
 
 template<typename T, bool BIAS = ENN_DEFAULT_BIAS, typename T_SIZE = ENN_DEFAULT_SIZE_TYPE>
@@ -59,23 +139,25 @@ public:
 	///
 	/// Note that the size of inputs_arr and outputs_arr must be equal to N*num_data and M*num_data
 	/// where N is the number of input and M is the number of output neurons
-	void train(const T * inputs_arr, const T * outputs_arr, size_t num_data, TrainerBase<T> &trainer, size_t epochs) {
+	void train(const T * inputs_arr, const T * outputs_arr, size_t num_data, TrainerBase<T, BIAS, T_SIZE> &trainer, size_t epochs, bool clean=true) {
 		std::vector<const T*> inputs;
 		std::vector<const T*> outputs;
 
-		for (size_t i = 0; i < num_data) {
+		for (size_t i = 0; i < num_data; i++) {
 			inputs.push_back(inputs_arr);
 			outputs.push_back(outputs_arr);
-			inputs_arr + _layers.front()->num_inputs();
-			outputs_arr + _layers.back()->num_outputs();
+			inputs_arr += _layers.front()->num_inputs();
+			outputs_arr += _layers.back()->num_outputs();
 		}
 
-		train(inputs, outputs, trainer, epochs);
+		train(inputs, outputs, trainer, epochs, clean);
 	}
 
-	void train(const std::vector<const T*> &inputs, const std::vector<const T*> &outputs, size_t epochs) {
+	void train(const std::vector<const T*> &inputs, const std::vector<const T*> &outputs, TrainerBase<T, BIAS, T_SIZE> &trainer, size_t epochs, bool clean=true) {
 		trainer.init(inputs, outputs, _layers);
 		trainer.fit(epochs);
+		if (clean)
+			trainer.clean();
 	}
 };
 
