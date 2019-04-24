@@ -1,0 +1,25 @@
+#if !defined(ENN_SIGMOID_ACTIVATION_H)
+#define ENN_SIGMOID_ACTIVATION_H
+
+#include <LayerBase.h>
+#include <math.h>
+
+namespace EasyNeuralNetworks {
+
+template <typename T = ENN_DEFAULT_TYPE>
+class SigmoidActivation : public ActivationBase<T> {
+public:
+	inline virtual T forward(T val) const
+	{
+		return 1.0 / (1.0 + exp(-val));
+	}
+
+	inline virtual T backward(T val) const
+	{
+		return val * (1 - val);
+	}
+};
+
+};
+
+#endif

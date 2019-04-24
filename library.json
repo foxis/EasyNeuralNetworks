@@ -1,0 +1,24 @@
+{
+  "name": "EasyNeuralNetworks",
+  "authors":
+  {
+    "name": "Andrius Mikonis",
+    "email": "andrius.mikonis@gmail.com",
+    "url": "http://itohi.com"
+  },
+  "keywords": "AI, Neural Network",
+  "description": "Library which makes it easy to add support for Neural Networks on embedded devices such as AVR, ESP8266 and ESP32.",
+  "repository":
+  {
+    "type": "git",
+    "url": "https://github.com/foxis/EasyNeuralNetworks.git"
+  },
+  "frameworks": "arduino",
+  "platforms":
+  [
+    "esp8266",
+    "esp32",
+		"espressif32",
+    "espressif8266"
+  ]
+}
