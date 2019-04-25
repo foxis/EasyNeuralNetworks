@@ -25,7 +25,7 @@ public:
 	FixedPointType(float val) { *this = val; }
 	FixedPointType(double val) { *this = val; }
 
-	#define ENN_CONVERSION_HELPER(TYPE) explicit operator TYPE () const { return raw >> EXPONENT; }
+	#define ENN_CONVERSION_HELPER(TYPE) explicit inline operator TYPE () const { return raw >> EXPONENT; }
 
 	ENN_CONVERSION_HELPER(int8_t)
 	ENN_CONVERSION_HELPER(int16_t)
@@ -38,10 +38,10 @@ public:
 
 	#undef ENN_CONVERSION_HELPER
 
-	explicit operator float () const { return convert_to_float<float>(raw); }
-	explicit operator double () const { return convert_to_float<double>(raw); }
+	explicit inline operator float () const { return convert_to_float<float>(raw); }
+	explicit inline operator double () const { return convert_to_float<double>(raw); }
 
-	#define ENN_ASSIGNMENT_HELPER(TYPE) void operator = (TYPE val) { raw = ((T)val) << EXPONENT; }
+	#define ENN_ASSIGNMENT_HELPER(TYPE) inline void operator = (TYPE val) { raw = ((T)val) << EXPONENT; }
 
 	ENN_ASSIGNMENT_HELPER(int8_t)
 	ENN_ASSIGNMENT_HELPER(int16_t)
@@ -54,37 +54,39 @@ public:
 
 	#undef ENN_ASSIGNMENT_HELPER
 
-	void operator =(float val) { raw = convert_from_float<float>(val); }
-	void operator =(double val) { raw = convert_from_float<double>(val); }
+	inline void operator =(float val) { raw = convert_from_float<float>(val); }
+	inline void operator =(double val) { raw = convert_from_float<double>(val); }
 
-	void operator +=(const FixedPointType<T, EXPONENT> &val) { raw += val.raw; }
-	void operator -=(const FixedPointType<T, EXPONENT> &val) { raw -= val.raw; }
-	void operator *=(const FixedPointType<T, EXPONENT> &val) { raw = mul(val.raw); }
-	void operator /=(const FixedPointType<T, EXPONENT> &val) { raw = div(val.raw); }
+	inline void operator +=(const FixedPointType<T, EXPONENT> &val) { raw += val.raw; }
+	inline void operator -=(const FixedPointType<T, EXPONENT> &val) { raw -= val.raw; }
+	inline void operator *=(const FixedPointType<T, EXPONENT> &val) { raw = mul(val.raw); }
+	inline void operator /=(const FixedPointType<T, EXPONENT> &val) { raw = div(val.raw); }
 
-	bool operator >(const FixedPointType<T, EXPONENT> &val) const { return raw > val.raw; }
-	bool operator <(const FixedPointType<T, EXPONENT> &val) const { return raw < val.raw; }
+	inline bool operator >(const FixedPointType<T, EXPONENT> &val) const { return raw > val.raw; }
+	inline bool operator <(const FixedPointType<T, EXPONENT> &val) const { return raw < val.raw; }
+	inline bool operator >=(const FixedPointType<T, EXPONENT> &val) const { return raw >= val.raw; }
+	inline bool operator <=(const FixedPointType<T, EXPONENT> &val) const { return raw <= val.raw; }
 
-	FixedPointType<T, EXPONENT> operator +(const FixedPointType<T, EXPONENT> &val) const { FixedPointType<T, EXPONENT> tmp; tmp.raw = raw + val.raw; return tmp; }
-	FixedPointType<T, EXPONENT> operator -(const FixedPointType<T, EXPONENT> &val) const { FixedPointType<T, EXPONENT> tmp; tmp.raw = raw - val.raw; return tmp; }
-	FixedPointType<T, EXPONENT> operator *(const FixedPointType<T, EXPONENT> &val) const { FixedPointType<T, EXPONENT> tmp; tmp.raw = mul(val.raw); return tmp; }
-	FixedPointType<T, EXPONENT> operator /(const FixedPointType<T, EXPONENT> &val) const { FixedPointType<T, EXPONENT> tmp; tmp.raw = div(val.raw); return tmp; }
+	inline FixedPointType<T, EXPONENT> operator +(const FixedPointType<T, EXPONENT> &val) const { FixedPointType<T, EXPONENT> tmp; tmp.raw = raw + val.raw; return tmp; }
+	inline FixedPointType<T, EXPONENT> operator -(const FixedPointType<T, EXPONENT> &val) const { FixedPointType<T, EXPONENT> tmp; tmp.raw = raw - val.raw; return tmp; }
+	inline FixedPointType<T, EXPONENT> operator *(const FixedPointType<T, EXPONENT> &val) const { FixedPointType<T, EXPONENT> tmp; tmp.raw = mul(val.raw); return tmp; }
+	inline FixedPointType<T, EXPONENT> operator /(const FixedPointType<T, EXPONENT> &val) const { FixedPointType<T, EXPONENT> tmp; tmp.raw = div(val.raw); return tmp; }
 
-	FixedPointType<T, EXPONENT>& operator ++() {
+	inline FixedPointType<T, EXPONENT>& operator ++() {
 		raw += ((T)1) << EXPONENT;
 		return *this;
 	}
-	FixedPointType<T, EXPONENT> operator ++(int) {
+	inline FixedPointType<T, EXPONENT> operator ++(int) {
 		FixedPointType<T, EXPONENT> tmp = *this;
 		++*this;
 		return tmp;
 	}
 
-	FixedPointType<T, EXPONENT>& operator --() {
+	inline FixedPointType<T, EXPONENT>& operator --() {
 		raw -= ((T)1) << EXPONENT;
 		return *this;
 	}
-	FixedPointType<T, EXPONENT> operator --(int) {
+	inline FixedPointType<T, EXPONENT> operator --(int) {
 		FixedPointType<T, EXPONENT> tmp = *this;
 		--*this;
 		return tmp;
@@ -92,12 +94,12 @@ public:
 private:
 
 	template<typename To>
-	To convert_to_float(T val) const {
+	inline To convert_to_float(T val) const {
 		return ((To)val) / (To)(((T)1) << EXPONENT);
 	}
 
 	template<typename From>
-	T convert_from_float(From val) const {
+	inline T convert_from_float(From val) const {
 		return val * (((T)1) << EXPONENT);
 	}
 

@@ -9,6 +9,7 @@
 #include <ReLUActivation.h>
 #include <SigmoidActivation.h>
 #include <TanhActivation.h>
+#include <SoftplusActivation.h>
 #include <InputLayer.h>
 #include <DenseLayer.h>
 #include <DropOutLayer.h>
