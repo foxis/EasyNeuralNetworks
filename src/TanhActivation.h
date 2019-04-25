@@ -16,8 +16,7 @@ public:
 
 	inline virtual T backward(T val) const
 	{
-		T t = tanh((double)val);
-		return (T)1 - t * t;
+		return (T)1 - val * val;
 	}
 };
 

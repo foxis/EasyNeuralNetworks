@@ -6,8 +6,8 @@ using namespace EasyNeuralNetworks;
 //#define TYPE FixedPointType<int32_t, 16>
 #define TYPE float
 
-//TanhActivation<TYPE> activation;
-SigmoidActivation<TYPE> activation;
+TanhActivation<TYPE> activation;
+//SigmoidActivation<TYPE> activation;
 //SoftplusActivation<TYPE> activation1;
 ReLUActivation<TYPE> activation1(.001);
 
