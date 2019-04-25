@@ -20,6 +20,9 @@
 
 namespace EasyNeuralNetworks {
 
+template<typename T, bool BIAS = ENN_DEFAULT_BIAS, typename T_SIZE = ENN_DEFAULT_SIZE_TYPE>
+class NeuralNetwork;
+
 template<typename T, bool BIAS, typename T_SIZE>
 class TrainerBase {
 protected:
@@ -27,6 +30,8 @@ protected:
 	std::vector<const T*> inputs;
 	std::vector<const T*> outputs;
 	std::vector<T_LAYER> layers;
+	NeuralNetwork<T, BIAS, T_SIZE>* network;
+
 	T_SIZE num_inputs;
 	T_SIZE num_outputs;
 	T_LAYER first;
@@ -36,13 +41,14 @@ public:
 	TrainerBase()
 	{	}
 
-	virtual void init(const std::vector<const T*> &inputs, const std::vector<const T*> &outputs, std::vector<T_LAYER> &layers) {
+	virtual void init(const std::vector<const T*> &inputs, const std::vector<const T*> &outputs, NeuralNetwork<T, BIAS, T_SIZE>* network) {
 		this->inputs = inputs;
 		this->outputs = outputs;
-		this->layers = layers;
+		this->layers = network->layers();
+		this->network = network;
 
-		this->first = layers.front();
-		this->last = layers.back();
+		this->first = network->input();
+		this->last = network->output();
 
 		this->num_inputs = first->num_inputs();
 		this->num_outputs = last->num_outputs();
@@ -51,16 +57,6 @@ public:
 	virtual void clean() = 0;
 
 	virtual void fit(size_t epochs) = 0;
-
-	// helper methods
-	inline void evaluate() {
-		typename std::vector<T_LAYER>::iterator I = layers.begin();
-
-		while (I != layers.end()) {
-			(*I)->forward();
-			++I;
-		}
-	}
 
 	inline void diff_arr(T * dst, const T * a, const T * b, T_SIZE num) {
 		for (T_SIZE i = 0; i < num; i++) {
@@ -112,7 +108,7 @@ public:
 
 };
 
-template<typename T, bool BIAS = ENN_DEFAULT_BIAS, typename T_SIZE = ENN_DEFAULT_SIZE_TYPE>
+template<typename T, bool BIAS, typename T_SIZE>
 class NeuralNetwork {
 	typedef LayerBase<T, BIAS, T_SIZE>* T_LAYER;
 	std::vector<T_LAYER> _layers;
@@ -130,6 +126,10 @@ public:
 		// todo sanity checks for layer in/out
 #endif
 	}
+
+	std::vector<T_LAYER>& layers() { return _layers; }
+	T_LAYER input() { return _layers.front(); }
+	T_LAYER output() { return _layers.back(); }
 
 	void calculate() {
 		typename std::vector<T_LAYER>::iterator p = _layers.begin();
@@ -160,7 +160,7 @@ public:
 	}
 
 	void train(const std::vector<const T*> &inputs, const std::vector<const T*> &outputs, TrainerBase<T, BIAS, T_SIZE> &trainer, size_t epochs, bool clean=true) {
-		trainer.init(inputs, outputs, _layers);
+		trainer.init(inputs, outputs, this);
 		trainer.fit(epochs);
 		if (clean)
 			trainer.clean();

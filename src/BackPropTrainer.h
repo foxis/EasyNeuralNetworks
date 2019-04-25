@@ -31,8 +31,8 @@ public:
 		this->callback_data = callback_data;
 	}
 
-	virtual void init(const std::vector<const T*> &inputs, const std::vector<const T*> &outputs, std::vector<T_LAYER> &layers) override {
-		TrainerBase<T, BIAS, T_SIZE>::init(inputs, outputs, layers);
+	virtual void init(const std::vector<const T*> &inputs, const std::vector<const T*> &outputs, NeuralNetwork<T, BIAS, T_SIZE>* network) override {
+		TrainerBase<T, BIAS, T_SIZE>::init(inputs, outputs, network);
 
 		delta_out = (T*)malloc(this->num_outputs * sizeof(T));
 
@@ -89,7 +89,7 @@ public:
 			T discrepancy ;
 			// evaluate input/output pair
 			memcpy(this->first->inputs(), *I, sizeof(T) * this->num_inputs);
-			this->evaluate();
+			this->network->calculate();
 
 			// calculate output error
 			this->diff_arr(delta_out, *O, this->last->outputs(), this->num_outputs);
