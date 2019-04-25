@@ -11,12 +11,12 @@ class SigmoidActivation : public ActivationBase<T> {
 public:
 	inline virtual T forward(T val) const
 	{
-		return 1.0 / (1.0 + exp(-val));
+		return 1.0 / (1.0 + exp(-(double)val));
 	}
 
 	inline virtual T backward(T val) const
 	{
-		return val * (1 - val);
+		return val * ((T)1 - val);
 	}
 };
 

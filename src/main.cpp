@@ -3,67 +3,71 @@
 #include <BackPropTrainer.h>
 using namespace EasyNeuralNetworks;
 
+#define TYPE FixedPointType<int32_t, 16>
+//#define TYPE float
+
+//TanhActivation<TYPE> activation;
+SigmoidActivation<TYPE> activation;
+
+InputLayer<TYPE> input(2);
+DenseLayer<TYPE> hidden(input, 5, activation);
+DenseLayer<TYPE> output(hidden, 1, activation);
+
+NeuralNetwork<TYPE> nn(3, &input, &hidden, &output);
+
+BackPropTrainer<TYPE> trainer(5, .001, [](TYPE error, size_t epoch, void * data) {
+	if (epoch % 100 == 0) {
+		Serial.print("Epoch ");
+		Serial.print(epoch);
+		Serial.print(", error ");
+		Serial.println((float)error);
+	}
+	delay(1);
+	return error > 0.001;
+});
+
+TYPE inputs[] = {
+	0,0,
+	1,0,
+	0,1,
+	1,1,
+};
+TYPE outputs[] = {
+	0,1,1,0
+};
+
 void setup() {
 	Serial.begin(115200);
-	Serial.println("Testing Fixed point arithmetics...");
+	Serial.println("Testing Training XOR NN with 3 hidden neurons...");
+
+	unsigned long now = micros();
+	nn.train((TYPE*)inputs, (TYPE*)outputs, 4, trainer, 5000);
+	now = micros() - now;
+	Serial.print("Trained in: "); Serial.print(now); Serial.println("us");
 }
-
-template<typename T, typename T1, int EXPONENT>
-void test_conversion(T initial, float add=78, float mul=31, float div=15) {
-	T result;
-	FixedPointType<T1, EXPONENT> test;
-
-	Serial.print("Testing conversion "); Serial.print(__PRETTY_FUNCTION__ );
-	Serial.println();
-
-	test = initial;
-	result = (T)test;
-
-	Serial.print("initial: "); Serial.println((float)initial);
-	Serial.print("result: "); Serial.println((float)result);
-	Serial.print("test: "); Serial.println((float)test);
-
-	Serial.print("add: "); Serial.print((float)(test + add)); Serial.print(" "); Serial.println((float)(initial) + add);
-	Serial.print("add: "); Serial.print((float)(test + (1/add))); Serial.print(" "); Serial.println((float)(initial) + (1/add));
-	Serial.print("sub: "); Serial.print((float)(test - add)); Serial.print(" "); Serial.println((float)(initial) - add);
-	Serial.print("sub: "); Serial.print((float)(test - (1/add))); Serial.print(" "); Serial.println((float)(initial) - (1/add));
-
-	Serial.print("mul: "); Serial.print((float)(test * mul));Serial.print(" ");  Serial.println((float)(initial) * mul);
-	Serial.print("mul: "); Serial.print((float)(test * -mul)); Serial.print(" "); Serial.println((float)(initial) * -mul);
-	Serial.print("mul: "); Serial.print((float)(test * (1.0f / mul))); Serial.print(" "); Serial.println((float)(initial) * (1/mul));
-
-	Serial.print("div: "); Serial.print((float)(test / div)); Serial.print(" "); Serial.println((float)(initial) / div);
-	Serial.print("div: "); Serial.print((float)(test / -div)); Serial.print(" "); Serial.println((float)(initial) / -div);
-	Serial.print("div: "); Serial.print((float)(test / (1.0f / div))); Serial.print(" "); Serial.println((float)(initial) / (1/div));
-
-	Serial.print("test++: "); Serial.print((float)test); Serial.print(" "); Serial.println((float)(test ++));
-	Serial.print("test--: "); Serial.print((float)test); Serial.print(" "); Serial.println((float)(test --));
-	Serial.print("++test: "); Serial.print((float)test); Serial.print(" "); Serial.println((float)(++test));
-	Serial.print("--test: "); Serial.print((float)test); Serial.print(" "); Serial.println((float)(--test));
-
-}
-
 
 void loop() {
-	FixedPointType<int32_t, 16> test = 75;
+	TYPE o[4];
+	unsigned long now = micros();
+	TYPE * p = inputs;
 
-	test_conversion<int8_t, int32_t, 8>(75);
-	test_conversion<int8_t, int32_t, 8>(-76);
-	test_conversion<int16_t, int32_t, 8>(775);
-	test_conversion<int16_t, int32_t, 8>(-175);
+	for (int i = 0; i < 4; i++) {
+		input.inputs()[0] = p[0];
+		input.inputs()[1] = p[1];
+		nn.calculate();
+		o[i] = output.outputs()[0];
+		p += 2;
+	}
 
-	test_conversion<int8_t, uint32_t, 16>(75);
-	test_conversion<int8_t, uint32_t, 16>(-76);
-	test_conversion<int16_t, uint32_t, 8>(775);
-	test_conversion<int16_t, uint32_t, 8>(-175);
+	now = micros() - now;
 
-	test_conversion<uint8_t, int32_t, 16>(75);
-	test_conversion<uint8_t, int32_t, 8>(175);
+	Serial.print("Computed in: "); Serial.print(now); Serial.println("us");
+	for (int i = 0; i < 4; i++) {
+		Serial.print("Inputs: ");
+		Serial.print((float)inputs[i * 2]); Serial.print(", "); Serial.print((float)inputs[i * 2 + 1]); Serial.println();
+		Serial.print("Output: ");
+		Serial.print((float)o[i]); Serial.println();
+	}
 
-	test_conversion<float, int32_t, 20>(7.5);
-	test_conversion<double, int32_t, 20>(-7.6);
-
-	test_conversion<FixedPointType<int32_t, 16>, int32_t, 16>(test);
-
-	while (true) delay(1000);
+	delay(1000);
 }

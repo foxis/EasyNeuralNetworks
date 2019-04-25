@@ -3,33 +3,36 @@
 #include <BackPropTrainer.h>
 using namespace EasyNeuralNetworks;
 
-TanhActivation<float> activation;
-//SigmoidActivation<float> activation;
+#define TYPE FixedPointType<int32_t, 16>
+//#define TYPE float
 
-InputLayer<float> input(2);
-DenseLayer<float> hidden(input, 5, activation);
-DenseLayer<float> output(hidden, 1, activation);
+//TanhActivation<TYPE> activation;
+SigmoidActivation<TYPE> activation;
 
-NeuralNetwork<float> nn(3, &input, &hidden, &output);
+InputLayer<TYPE> input(2);
+DenseLayer<TYPE> hidden(input, 5, activation);
+DenseLayer<TYPE> output(hidden, 1, activation);
 
-BackPropTrainer<float> trainer(5, .001, [](float error, size_t epoch, void * data) {
+NeuralNetwork<TYPE> nn(3, &input, &hidden, &output);
+
+BackPropTrainer<TYPE> trainer(5, .001, [](TYPE error, size_t epoch, void * data) {
 	if (epoch % 100 == 0) {
 		Serial.print("Epoch ");
 		Serial.print(epoch);
 		Serial.print(", error ");
-		Serial.println(error);
+		Serial.println((float)error);
 	}
 	delay(1);
-	return true;
+	return error > 0.001;
 });
 
-float inputs[] = {
+TYPE inputs[] = {
 	0,0,
 	1,0,
 	0,1,
 	1,1,
 };
-float outputs[] = {
+TYPE outputs[] = {
 	0,1,1,0
 };
 
@@ -38,15 +41,15 @@ void setup() {
 	Serial.println("Testing Training XOR NN with 3 hidden neurons...");
 
 	unsigned long now = micros();
-	nn.train((float*)inputs, (float*)outputs, 4, trainer, 5000);
+	nn.train((TYPE*)inputs, (TYPE*)outputs, 4, trainer, 5000);
 	now = micros() - now;
 	Serial.print("Trained in: "); Serial.print(now); Serial.println("us");
 }
 
 void loop() {
-	float o[4];
+	TYPE o[4];
 	unsigned long now = micros();
-	float * p = inputs;
+	TYPE * p = inputs;
 
 	for (int i = 0; i < 4; i++) {
 		input.inputs()[0] = p[0];
@@ -61,9 +64,9 @@ void loop() {
 	Serial.print("Computed in: "); Serial.print(now); Serial.println("us");
 	for (int i = 0; i < 4; i++) {
 		Serial.print("Inputs: ");
-		Serial.print(inputs[i * 2]); Serial.print(", "); Serial.print(inputs[i * 2 + 1]); Serial.println();
+		Serial.print((float)inputs[i * 2]); Serial.print(", "); Serial.print((float)inputs[i * 2 + 1]); Serial.println();
 		Serial.print("Output: ");
-		Serial.print(o[i]); Serial.println();
+		Serial.print((float)o[i]); Serial.println();
 	}
 
 	delay(1000);

@@ -41,7 +41,7 @@ public:
 		while (I != this->layers.end()) {
 			// initialize weights to random
 			for (T_SIZE i = 0; i < (*I)->num_weights(); i++)
-				(*I)->weights()[i] = .5 - (rand() / (T)RAND_MAX);
+				(*I)->weights()[i] = .5 - (rand() / (float)RAND_MAX);
 			// initialize error arrays
 			if ((*I)->num_errors())
 				(*I)->errors((T*)malloc(sizeof(T) * (*I)->num_errors()));

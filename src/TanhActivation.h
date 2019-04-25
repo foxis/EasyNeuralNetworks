@@ -11,13 +11,13 @@ class TanhActivation : public ActivationBase<T> {
 public:
 	inline virtual T forward(T val) const
 	{
-		return tanh(val);
+		return tanh((double)val);
 	}
 
 	inline virtual T backward(T val) const
 	{
-		T t = tanh(val);
-		return 1 - t * t;
+		T t = tanh((double)val);
+		return (T)1 - t * t;
 	}
 };
 
