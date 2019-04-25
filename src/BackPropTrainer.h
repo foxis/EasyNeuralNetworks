@@ -17,16 +17,16 @@ private:
 
 	T * delta_out;
 	T mean_error;
-	T alpha;
-	T beta;
-	T current_alpha;
+	T momentum;
+	T decay;
+	T current_momentum;
 	EpochCallback_t callback;
 	void * callback_data;
 
 public:
-	BackPropTrainer(T alpha, T beta, EpochCallback_t callback = NULL, void * callback_data = NULL) : TrainerBase<T, BIAS, T_SIZE>() {
-		this->alpha = alpha;
-		this->beta = beta;
+	BackPropTrainer(T momentum, T decay, EpochCallback_t callback = NULL, void * callback_data = NULL) : TrainerBase<T, BIAS, T_SIZE>() {
+		this->momentum = momentum;
+		this->decay = decay;
 		this->callback = callback;
 		this->callback_data = callback_data;
 	}
@@ -49,7 +49,7 @@ public:
 		}
 
 		mean_error = 0;
-		current_alpha = alpha;
+		current_momentum = momentum;
 	}
 
 	virtual void clean() {
@@ -68,7 +68,7 @@ public:
 		for (size_t epoch = 0; epoch < epochs; epoch++) {
 			fit_epoch();
 			// adjust parameters
-			current_alpha -= current_alpha * beta;
+			current_momentum -= current_momentum * decay;
 
 			if (callback != NULL) {
 				if (!callback(mean_error, epoch, callback_data))
@@ -110,7 +110,7 @@ public:
 				} else {
 					errors = prev->errors();
 				}
-				(*L)->backwards(errors);
+				(*L)->backward(errors);
 				prev = *L;
 				++L;
 			}
@@ -124,7 +124,7 @@ public:
 				} else {
 					errors = prev->errors();
 				}
-				(*L)->update(errors, current_alpha);
+				(*L)->update(errors, current_momentum);
 				prev = *L;
 				++L;
 			}

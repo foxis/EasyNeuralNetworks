@@ -17,6 +17,10 @@
 #define ENN_DEFAULT_BIAS true
 #endif
 
+#define ENN_BIAS (BIAS?1:0)
+
+#include <FixedPointType.h>
+
 namespace EasyNeuralNetworks {
 
 template<typename T>
@@ -124,7 +128,7 @@ public:
 	/// performs error back propagation.
 	/// will calculate errors for the inputs.
 	/// will modify errors inplace
-	virtual void backwards(T * deltas) = 0;
+	virtual void backward(T * deltas) = 0;
 
 	///
 	/// will update the weights calculated in backwards

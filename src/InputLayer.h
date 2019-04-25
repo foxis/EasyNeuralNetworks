@@ -46,7 +46,7 @@ public:
 	/// performs error back propagation.
 	/// will calculate errors for the inputs.
 	///
-	virtual void backwards(T * deltas)
+	virtual void backward(T * deltas)
 	{
 	}
 

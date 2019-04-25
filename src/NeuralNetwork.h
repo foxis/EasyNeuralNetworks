@@ -11,6 +11,11 @@
 #include <TanhActivation.h>
 #include <InputLayer.h>
 #include <DenseLayer.h>
+#include <DropOutLayer.h>
+#include <ConvLayer1D.h>
+#include <ConvLayer2D.h>
+#include <ConvLayer3D.h>
+#include <PoolingLayer1D.h>
 #include <ProgmemHelper.h>
 
 namespace EasyNeuralNetworks {
