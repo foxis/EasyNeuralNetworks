@@ -17,8 +17,6 @@
 #define ENN_DEFAULT_BIAS true
 #endif
 
-#define ENN_BIAS (BIAS?1:0)
-
 #include <FixedPointType.h>
 
 namespace EasyNeuralNetworks {

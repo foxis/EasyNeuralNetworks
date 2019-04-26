@@ -6,8 +6,8 @@ using namespace EasyNeuralNetworks;
 //#define TYPE FixedPointType<int32_t, 16>
 #define TYPE float
 
-TanhActivation<TYPE> activation;
-//SigmoidActivation<TYPE> activation;
+//TanhActivation<TYPE> activation;
+SigmoidActivation<TYPE> activation;
 //SoftplusActivation<TYPE> activation1;
 ReLUActivation<TYPE> activation1(.001);
 
@@ -17,7 +17,7 @@ DenseLayer<TYPE> output(hidden, 1, activation);
 
 NeuralNetwork<TYPE> nn(3, &input, &hidden, &output);
 
-BackPropTrainer<TYPE> trainer(2, .001, [](TYPE error, size_t epoch, void * data) {
+BackPropTrainer<TYPE, ENN_WEIGHTS_FLAT> trainer(2.0f, .001f, L2Loss<TYPE>(), [](TYPE error, size_t epoch, void * data) {
 	if (epoch % 100 == 0) {
 		Serial.print("Epoch ");
 		Serial.print(epoch);

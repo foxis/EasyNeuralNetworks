@@ -3,6 +3,7 @@
 
 #include <LayerBase.h>
 #include <ProgmemHelper.h>
+#include <matvecop.h>
 
 namespace EasyNeuralNetworks {
 
@@ -67,29 +68,8 @@ public:
 	///  Wij = W_arr(i + j * N)
 	virtual void forward()
 	{
-		T acc;
-		T_SIZE i, j;
-		const T * in_p;
-		const T * w_p;
-		T * out_p;
-
-		// iterate over outputs
-		for (j = 0, out_p = this->outputs(), w_p = _weights; j < this->num_outputs(); j++) {
-			acc = 0;
-			// iterate over inputs
-			for (i = 0, in_p = this->inputs(); i < this->num_inputs(); i++) {
-				acc += *in_p * *w_p;
-
-				++in_p;
-				++w_p;
-			}
-			if (BIAS) {
-				acc += *w_p;
-				++w_p;
-			}
-			*out_p = this->_activation.forward(acc);
-			++out_p;
-		}
+		mat_mul<T, BIAS, T_SIZE, false>(this->outputs(), this->inputs(), _weights, this->num_inputs(), this->num_outputs());
+		this->_activation.apply_forward_inplace(this->outputs(), this->num_outputs());
 	}
 
 	///
@@ -101,28 +81,9 @@ public:
 	/// size of errors should be the same as number of output errors
 	virtual void backward(T * deltas)
 	{
-		T * i_p = _errors;
-		T * d_p;
-		T * w_p;
-		T delta;
-
-		// apply activation derivative
+		// calculate gradients
 		this->_activation.apply_backward_inplace(deltas, this->outputs(), this->num_outputs());
-
-		// iterate over inputs
-		for (T_SIZE i = 0; i < this->num_inputs(); i++) {
-			w_p = _weights + i;
-			d_p = deltas;
-			delta = 0;
-			// iterate over outputs
-			for (T_SIZE j = 0; j < this->num_outputs(); j++) {
-				delta += *d_p * *w_p;
-				++d_p;
-				w_p += (this->num_inputs() + ENN_BIAS);
-			}
-			*i_p = delta;
-			++i_p;
-		}
+		mat_mul<T, BIAS, T_SIZE, true>(this->errors(), deltas, _weights, this->num_inputs(), this->num_outputs());
 	}
 
 	///
@@ -130,26 +91,7 @@ public:
 	///
 	virtual void update(const T * deltas, T alpha)
 	{
-		T * i_p;
-		const T * e_p = deltas;
-		T * w_p = _weights;
-
-		// iterate over output errors
-		for (T_SIZE j = 0; j < this->num_outputs(); j++) {
-			// iterate over inputs
-			i_p = this->_inputs;
-			for (T_SIZE i = 0; i < this->num_inputs(); i++) {
-					*w_p += alpha * *e_p * *i_p;
-					++i_p;
-					++w_p;
-			}
-			// update bias
-			if (BIAS) {
-				*w_p += alpha * *e_p;
-				++w_p;
-			}
-			++e_p;
-		}
+		outer_product_add_const<T, BIAS, T_SIZE>(_weights, deltas, this->inputs(), this->num_outputs(), this->num_inputs(), -alpha);
 	}
 
 };

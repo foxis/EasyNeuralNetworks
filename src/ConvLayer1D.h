@@ -14,33 +14,40 @@ class ConvLayer1D : public LayerBase<T, BIAS, T_SIZE> {
 	T * _errors;
 	T_SIZE _kernel_size;
 	T_SIZE _num_kernels;
+	T_SIZE _stride;
+	#define ENN_CONV_NEURON_SIZE(N_IN, K, STRIDE) ( ((N_IN) - (K)) / (STRIDE) + 1)
+	#define ENN_CONV_OUTPUT_SIZE(N_IN, K, NK, STRIDE) (ENN_CONV_NEURON_SIZE(N_IN, K, STRIDE) * NK)
 public:
-	ConvLayer1D(T_SIZE num_inputs, T_SIZE num_kernels, T_SIZE kernel_size, const ActivationBase<T>& activation)
-		: LayerBase<T, BIAS, T_SIZE>(NULL, num_inputs, NULL, (num_inputs - kernel_size) * num_kernels, activation) {
+	ConvLayer1D(T_SIZE num_inputs, T_SIZE num_kernels, T_SIZE kernel_size, T_SIZE stride, const ActivationBase<T>& activation)
+		: LayerBase<T, BIAS, T_SIZE>(NULL, num_inputs, NULL, ENN_CONV_OUTPUT_SIZE(num_inputs, kernel_size, num_kernels, stride), activation) {
 		_kernel_size = kernel_size;
 		_num_kernels = num_kernels;
+		this->_stride = stride;
 		this->weights((T*)malloc(sizeof(T) * this->num_weights()));
 		this->outputs((T*)malloc(sizeof(T) * this->num_outputs()));
 		this->inputs((T*)malloc(sizeof(T) * num_inputs));
 	}
-	ConvLayer1D(LayerBase<T, BIAS, T_SIZE> &input, T_SIZE num_kernels, T_SIZE kernel_size, const ActivationBase<T>& activation)
-		: LayerBase<T, BIAS, T_SIZE>(input, NULL, (input.num_inputs() - kernel_size) * num_kernels, activation) {
+	ConvLayer1D(LayerBase<T, BIAS, T_SIZE> &input, T_SIZE num_kernels, T_SIZE kernel_size, T_SIZE stride, const ActivationBase<T>& activation)
+		: LayerBase<T, BIAS, T_SIZE>(input, NULL, ENN_CONV_OUTPUT_SIZE(input.num_inputs(), kernel_size, num_kernels, stride), activation) {
 		_kernel_size = kernel_size;
 		_num_kernels = num_kernels;
+		this->_stride = stride;
 		this->weights((T*)malloc(sizeof(T) * this->num_weights()));
 		this->outputs((T*)malloc(sizeof(T) * this->num_outputs()));
 	}
-	ConvLayer1D(LayerBase<T, BIAS, T_SIZE> &input, T * weights, T_SIZE num_kernels, T_SIZE kernel_size, const ActivationBase<T>& activation)
-		: LayerBase<T, BIAS, T_SIZE>(input, NULL, (input.num_inputs() - kernel_size) * num_kernels, activation) {
+	ConvLayer1D(LayerBase<T, BIAS, T_SIZE> &input, T * weights, T_SIZE num_kernels, T_SIZE kernel_size, T_SIZE stride, const ActivationBase<T>& activation)
+		: LayerBase<T, BIAS, T_SIZE>(input, NULL, ENN_CONV_OUTPUT_SIZE(input.num_inputs(), kernel_size, num_kernels, stride), activation) {
 		_kernel_size = kernel_size;
 		_num_kernels = num_kernels;
+		this->_stride = stride;
 		this->weights(weights);
 		this->outputs((T*)malloc(sizeof(T) * this->num_outputs()));
 	}
-	ConvLayer1D(LayerBase<T, BIAS, T_SIZE> &input, const ProgmemHelper<T> & weights, T_SIZE num_kernels, T_SIZE kernel_size, const ActivationBase<T>& activation)
-		: LayerBase<T, BIAS, T_SIZE>(input, NULL, (input.num_inputs() - kernel_size) * num_kernels, activation) {
+	ConvLayer1D(LayerBase<T, BIAS, T_SIZE> &input, const ProgmemHelper<T> & weights, T_SIZE num_kernels, T_SIZE kernel_size, T_SIZE stride, const ActivationBase<T>& activation)
+		: LayerBase<T, BIAS, T_SIZE>(input, NULL, ENN_CONV_OUTPUT_SIZE(input.num_inputs(), kernel_size, num_kernels, stride), activation) {
 		_kernel_size = kernel_size;
 		_num_kernels = num_kernels;
+		this->_stride = stride;
 		this->weights(weights.read(this->num_weights()));
 		this->outputs((T*)malloc(sizeof(T) * this->num_outputs()));
 	}
@@ -60,7 +67,7 @@ public:
 	virtual inline const T* weights() const { return _weights; };
 	virtual inline T* weights() { return _weights; };
 	virtual inline void weights(T * weights) { _weights = weights; };
-	virtual inline T_SIZE num_weights() const { return (this->_kernel_size + (BIAS?1:0)) * this->_num_kernels; }
+	virtual inline T_SIZE num_weights() const { return (this->_kernel_size + ENN_BIAS) * this->_num_kernels; }
 
 	///
 	/// performs a forward calculation
@@ -76,32 +83,15 @@ public:
 	///  Wkj = W_arr(k + j * kernel_size)
 	virtual void forward()
 	{
-		T acc;
-		T_SIZE i, j, t;
-		T_SIZE stride_num = this->num_inputs() - _kernel_size; // valid padding
-		const T * in_p;
-		const T * w_p;
-		T * out_p;
-
-		// iterate over kernels
-		for (j = 0, out_p = this->outputs(); j < _num_kernels; j++) {
-			// iterate over kernel positions
-			for (t = 0; t < stride_num; t++) {
-				in_p = this->inputs() + t;
-				w_p = _weights + j * (_kernel_size + (BIAS?1:0)) * stride_num;
-				acc = 0;
-				// iterate over kernel weights
-				for (i = 0; i < _kernel_size; i++) {
-					acc += *in_p * *w_p;
-					++w_p;
-					++in_p;
-				}
-				if (BIAS)
-					acc += *w_p;
-				*out_p = this->_activation.forward(acc);
-				++out_p;
-			}
+		T * out = this->outputs();
+		T * W = _weights;
+		const T_SIZE neuron_size = this->num_inputs() / _stride - _kernel_size;
+		for (T_SIZE i = 0; i < _num_kernels; i ++) {
+			convolve_1d<T, BIAS, T_SIZE, false>(out, this->inputs(), W, this->num_inputs(), neuron_size, _stride);
+			out += neuron_size;
+			W += _kernel_size + ENN_BIAS;
 		}
+		this->_activation.apply_forward_inplace(this->outputs(), this->num_outputs());
 	}
 
 	///
@@ -113,31 +103,19 @@ public:
 	/// size of errors should be the same as number of output errors
 	virtual void backward(T * deltas)
 	{
-		T_SIZE i, j, t;
-		T_SIZE stride_num = this->num_inputs() - _kernel_size; // valid padding
-		const T * e_p;
-		const T * w_p;
-		T * d_p;
-
 		// apply activation derivative
 		this->_activation.apply_backward_inplace(deltas, this->outputs(), this->num_outputs());
 
+		T * D = deltas;
+		T * W = _weights;
+		const T_SIZE neuron_size = this->num_inputs() / _stride - _kernel_size;
+
 		memset(_errors, sizeof(T) * this->num_inputs());
 
-		// iterate over kernels
-		for (j = 0, d_p = deltas; j < _num_kernels; j++) {
-			// iterate over kernel positions
-			for (t = 0; t < stride_num; t++) {
-				e_p = _errors + t;
-				w_p = _weights + j * (_kernel_size + ENN_BIAS) * stride_num;
-				// iterate over kernel weights
-				for (i = 0; i < _kernel_size; i++) {
-					*e_p += *w_p * *d_p;
-					++w_p;
-					++e_p;
-				}
-				++d_p;
-			}
+		for (T_SIZE i = 0; i < _num_kernels; i ++) {
+			convolve_1d<T, BIAS, T_SIZE, true>(_errors, D, W, neuron_size, this->num_inputs(), _stride);
+			W += _kernel_size + ENN_BIAS;
+			D += neuron_size;
 		}
 	}
 

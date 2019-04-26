@@ -4,6 +4,7 @@
 #include <LayerBase.h>
 #include <cstdarg>
 #include <vector>
+#include <stdlib.h>
 
 #include <LUActivation.h>
 #include <ReLUActivation.h>
@@ -20,6 +21,48 @@
 #include <ProgmemHelper.h>
 
 namespace EasyNeuralNetworks {
+
+template<typename T>
+class LossFunctionBase {
+public:
+	virtual T operator () (T * deltas, const T * target, const T * output, size_t num) const = 0;
+
+	#define ENN_LOSS_LOOP(DELTA, ACC) \
+		T acc = 0;	\
+		while (num--) {	\
+			*deltas = DELTA;	\
+			acc += ACC;	\
+			++target;	\
+			++output;	\
+			++deltas;	\
+		}	\
+		return acc;
+};
+
+template<typename T>
+class L2Loss : public LossFunctionBase<T> {
+public:
+	virtual T operator () (T * deltas, const T * target, const T * output, size_t num) const {
+		ENN_LOSS_LOOP(*output - *target, *deltas * *deltas)
+	}
+};
+
+template<typename T>
+class L1Loss : public LossFunctionBase<T> {
+public:
+	virtual T operator () (T * deltas, const T * target, const T * output, size_t num) const {
+		ENN_LOSS_LOOP((*target < *output ? 1 : *target > *output ? -1 : 0), abs(*deltas))
+	}
+};
+
+template<typename T>
+class CrossEntropy : public LossFunctionBase<T> {
+public:
+	virtual T operator () (T * deltas, const T * target, const T * output, size_t num) const {
+		ENN_LOSS_LOOP(*target * log(*output), -*deltas)
+	}
+};
+
 
 template<typename T, bool BIAS = ENN_DEFAULT_BIAS, typename T_SIZE = ENN_DEFAULT_SIZE_TYPE>
 class NeuralNetwork;
@@ -58,55 +101,6 @@ public:
 	virtual void clean() = 0;
 
 	virtual void fit(size_t epochs) = 0;
-
-	inline void diff_arr(T * dst, const T * a, const T * b, T_SIZE num) {
-		for (T_SIZE i = 0; i < num; i++) {
-			*dst = *a - *b;
-			++a;
-			++dst;
-			++b;
-		}
-	}
-
-	inline void sqrdiff_arr(T * dst, const T * a, const T * b, T_SIZE num) {
-		T tmp;
-		for (T_SIZE i = 0; i < num; i++) {
-			tmp = *a - *b
-			*dst = tmp * tmp;
-			++a;
-			++dst;
-			++b;
-		}
-	}
-
-	inline T dot_arr(const T * a, const T * b, T_SIZE num) {
-		T acc = 0;
-		for (T_SIZE i = 0; i < num; i++) {
-			acc += *a * *b;
-			++a;
-			++b;
-		}
-		return acc;
-	}
-
-	inline T sum_arr(const T * a, T_SIZE num) {
-		T acc = 0;
-		for (T_SIZE i = 0; i < num; i++) {
-			acc += *a;
-			++a;
-		}
-		return acc;
-	}
-
-	inline T sqrsum_arr(const T * a, T_SIZE num) {
-		T acc = 0;
-		for (T_SIZE i = 0; i < num; i++) {
-			acc += *a * *a;
-			++a;
-		}
-		return acc;
-	}
-
 };
 
 template<typename T, bool BIAS, typename T_SIZE>
