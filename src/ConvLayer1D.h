@@ -15,6 +15,7 @@ class ConvLayer1D : public LayerBase<T, BIAS, T_SIZE> {
 	T_SIZE _kernel_size;
 	T_SIZE _num_kernels;
 	T_SIZE _stride;
+	T_SIZE _neuron_size;
 	#define ENN_CONV_NEURON_SIZE(N_IN, K, STRIDE) ( ((N_IN) - (K)) / (STRIDE) + 1)
 	#define ENN_CONV_OUTPUT_SIZE(N_IN, K, NK, STRIDE) (ENN_CONV_NEURON_SIZE(N_IN, K, STRIDE) * NK)
 public:
@@ -23,6 +24,7 @@ public:
 		_kernel_size = kernel_size;
 		_num_kernels = num_kernels;
 		this->_stride = stride;
+		this->_neuron_size = ENN_NEURON_SIZE(this->num_inputs(), _kernel_size, _stride);
 		this->weights((T*)malloc(sizeof(T) * this->num_weights()));
 		this->outputs((T*)malloc(sizeof(T) * this->num_outputs()));
 		this->inputs((T*)malloc(sizeof(T) * num_inputs));
@@ -32,6 +34,7 @@ public:
 		_kernel_size = kernel_size;
 		_num_kernels = num_kernels;
 		this->_stride = stride;
+		this->_neuron_size = ENN_NEURON_SIZE(this->num_inputs(), _kernel_size, _stride);
 		this->weights((T*)malloc(sizeof(T) * this->num_weights()));
 		this->outputs((T*)malloc(sizeof(T) * this->num_outputs()));
 	}
@@ -40,6 +43,7 @@ public:
 		_kernel_size = kernel_size;
 		_num_kernels = num_kernels;
 		this->_stride = stride;
+		this->_neuron_size = ENN_NEURON_SIZE(this->num_inputs(), _kernel_size, _stride);
 		this->weights(weights);
 		this->outputs((T*)malloc(sizeof(T) * this->num_outputs()));
 	}
@@ -48,6 +52,7 @@ public:
 		_kernel_size = kernel_size;
 		_num_kernels = num_kernels;
 		this->_stride = stride;
+		this->_neuron_size = ENN_NEURON_SIZE(this->num_inputs(), _kernel_size, _stride);
 		this->weights(weights.read(this->num_weights()));
 		this->outputs((T*)malloc(sizeof(T) * this->num_outputs()));
 	}
@@ -85,10 +90,9 @@ public:
 	{
 		T * out = this->outputs();
 		T * W = _weights;
-		const T_SIZE neuron_size = this->num_inputs() / _stride - _kernel_size;
 		for (T_SIZE i = 0; i < _num_kernels; i ++) {
-			convolve_1d<T, BIAS, T_SIZE, false>(out, this->inputs(), W, this->num_inputs(), neuron_size, _stride);
-			out += neuron_size;
+			convolve_1d<T, BIAS, T_SIZE, false>(out, this->inputs(), W, this->num_inputs(), _neuron_size, _stride);
+			out += _neuron_size;
 			W += _kernel_size + ENN_BIAS;
 		}
 		this->_activation.apply_forward_inplace(this->outputs(), this->num_outputs());
@@ -108,14 +112,13 @@ public:
 
 		T * D = deltas;
 		T * W = _weights;
-		const T_SIZE neuron_size = this->num_inputs() / _stride - _kernel_size;
 
 		memset(_errors, sizeof(T) * this->num_inputs());
 
 		for (T_SIZE i = 0; i < _num_kernels; i ++) {
-			convolve_1d<T, BIAS, T_SIZE, true>(_errors, D, W, neuron_size, this->num_inputs(), _stride);
+			convolve_1d<T, BIAS, T_SIZE, true>(_errors, D, W, _neuron_size, this->num_inputs(), _stride);
 			W += _kernel_size + ENN_BIAS;
-			D += neuron_size;
+			D += _neuron_size;
 		}
 	}
 
@@ -124,9 +127,32 @@ public:
 	///
 	virtual void update(const T * deltas, T alpha)
 	{
-
+		T * W = _weights;
+		const T * D = deltas;
+		for (T_SIZE i = 0; i < _num_kernels; i ++) {
+			for (T_SIZE j = 0; j < _kernel_size; j ++) {
+				*W -= alpha * zip_mul_sum(this->inputs(), D, this->num_inputs(), _neuron_size, _stride);
+				if (BIAS) {
+					*W -= alpha * sum_arr<T>(deltas, _neuron_size);
+				}
+			}
+			W += _kernel_size + ENN_BIAS;
+			D += _neuron_size;
+		}
 	}
 
+	inline T zip_mul_sum(const T * u, const T * v, T_SIZE N, T_SIZE M, T_SIZE stride) {
+		T acc = 0;
+		while (N && M) {
+			acc += *u * *v;
+			N -= stride;
+			--M;
+			u -= stride;
+			++v;
+		}
+
+		return acc;
+	}
 };
 
 };
