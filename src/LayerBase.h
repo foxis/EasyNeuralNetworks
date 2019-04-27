@@ -34,7 +34,7 @@ public:
 		auto D = deltas.begin(1);
 		auto O = outputs.begin(1);
 		auto num = outputs.size();
-		while (num) {
+		while (num--) {
 			*D = *D * backward(*O);
 			++D;
 			++O;
