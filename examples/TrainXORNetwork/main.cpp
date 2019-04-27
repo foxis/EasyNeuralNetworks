@@ -17,7 +17,7 @@ DenseLayer<TYPE> output(hidden, 1, activation);
 
 NeuralNetwork<TYPE> nn(3, &input, &hidden, &output);
 
-BackPropTrainer<TYPE> trainer(2, .001, [](TYPE error, size_t epoch, void * data) {
+BackPropTrainer<TYPE, ENN_WEIGHTS_FLAT> trainer(2.0f, .001f, L2Loss<TYPE>(), [](TYPE error, size_t epoch, void * data) {
 	if (epoch % 100 == 0) {
 		Serial.print("Epoch ");
 		Serial.print(epoch);
@@ -38,12 +38,15 @@ TYPE outputs[] = {
 	0,1,1,0
 };
 
+tensor<TYPE> input_tensor(inputs, 2, 1, 4);
+tensor<TYPE> output_tensor(outputs, 1, 1, 4);
+
 void setup() {
 	Serial.begin(115200);
 	Serial.println("Testing Training XOR NN with 3 hidden neurons...");
 
 	unsigned long now = micros();
-	nn.train((TYPE*)inputs, (TYPE*)outputs, 4, trainer, 5000);
+	nn.train(input_tensor, output_tensor, trainer, 5000);
 	now = micros() - now;
 	Serial.print("Trained in: "); Serial.print(now); Serial.println("us");
 }
@@ -54,8 +57,7 @@ void loop() {
 	TYPE * p = inputs;
 
 	for (int i = 0; i < 4; i++) {
-		input.inputs()[0] = p[0];
-		input.inputs()[1] = p[1];
+		input.inputs().copy(input_tensor.window(i));
 		nn.calculate();
 		o[i] = output.outputs()[0];
 		p += 2;

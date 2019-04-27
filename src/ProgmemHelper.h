@@ -6,7 +6,7 @@
 
 namespace EasyNeuralNetworks {
 
-typedef std::function<size_t (void * dst, const void * src, size_t cb)> Reader_t;
+typedef std::function<void (void * dst, const void * src, size_t cb)> Reader_t;
 
 ///
 /// Simple Progmem data reader used for e.g. loading weights from flash memory
