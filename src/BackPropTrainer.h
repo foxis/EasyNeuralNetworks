@@ -107,7 +107,6 @@ public:
 		T_INPUT *gradients;
 
 		mean_error = 0;
-		tensor<T, T_SIZE> window;
 
 		for (T_SIZE input_output_pair = 0; input_output_pair < this->inputs.depth(); input_output_pair++) {
 			// evaluate input/output pair
