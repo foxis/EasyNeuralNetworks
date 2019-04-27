@@ -19,6 +19,7 @@
 #include <ConvLayer3D.h>
 #include <PoolingLayer1D.h>
 #include <ProgmemHelper.h>
+#include <FixedPointType.h>
 
 namespace EasyNeuralNetworks {
 
