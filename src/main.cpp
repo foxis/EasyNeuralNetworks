@@ -3,105 +3,75 @@
 #include <BackPropTrainer.h>
 using namespace EasyNeuralNetworks;
 
+//#define TYPE FixedPointType<int32_t, 16>
 #define TYPE float
 
-TYPE inputs1[] = {
+//TanhActivation<TYPE> activation;
+SigmoidActivation<TYPE> activation;
+//SoftplusActivation<TYPE> activation1;
+ReLUActivation<TYPE> activation1(.001);
+
+InputLayer<TYPE> input(2);
+DenseLayer<TYPE> hidden(input, 5, activation1);
+DenseLayer<TYPE> output(hidden, 1, activation);
+
+NeuralNetwork<TYPE> nn(3, &input, &hidden, &output);
+
+BackPropTrainer<TYPE, ENN_WEIGHTS_FLAT> trainer(2.0f, .001f, L2Loss<TYPE>(), [](TYPE error, size_t epoch, void * data) {
+	if (epoch % 100 == 0) {
+		Serial.print("Epoch ");
+		Serial.print(epoch);
+		Serial.print(", error ");
+		Serial.println((float)error);
+	}
+	delay(1);
+	return error > 0.001;
+});
+
+TYPE inputs[] = {
 	0,0,
 	1,0,
 	0,1,
 	1,1,
 };
-
-TYPE inputs2[] = {
-	2,3,
-	4,5,
-	6,7,
-	8,9,
+TYPE outputs[] = {
+	0,1,1,0
 };
 
-TYPE inputs3[] = {
-	2,
-	3,
-	4,
-	5,
-};
-
-TYPE inputs4[] PROGMEM = {
-	12,
-	13,
-	14,
-	15,
-};
-
-tensor<TYPE> tensor1(inputs1, 2, 1, 4);
-tensor<TYPE> tensor2(inputs2, 2, 1, 4);
-tensor<TYPE> tensor3(inputs3, 1, 1, 4);
-tensor<TYPE> tensor4(ProgmemHelper<TYPE>(inputs4), 1, 1, 4);
-
-void print_tensor_cr(const char* name, const tensor<TYPE>& t) {
-	Serial.print("Const Tensor Ref "); Serial.print(name); Serial.print(" ");
-	Serial.print(t.width()); Serial.print("x"); Serial.print(t.height()); Serial.print("x"); Serial.print(t.depth()); Serial.print("@"); Serial.print(t.size());Serial.print(": ");
-	for (auto &v : t.iter(1)) {
-		Serial.print(v); Serial.print(" ");
-	}
-	Serial.println();
-}
-void print_tensor_r(const char* name, tensor<TYPE>& t) {
-	Serial.print("Tensor Ref "); Serial.print(name); Serial.print(" ");
-	Serial.print(t.width()); Serial.print("x"); Serial.print(t.height()); Serial.print("x"); Serial.print(t.depth()); Serial.print("@"); Serial.print(t.size());Serial.print(": ");
-	for (auto &v : t.iter(1)) {
-		Serial.print(v); Serial.print(" ");
-	}
-	Serial.println();
-}
-void print_tensor(const char* name, tensor<TYPE> t) {
-	Serial.print("Tensor "); Serial.print(name); Serial.print(" ");
-	Serial.print(t.width()); Serial.print("x"); Serial.print(t.height()); Serial.print("x"); Serial.print(t.depth()); Serial.print("@"); Serial.print(t.size());Serial.print(": ");
-	for (auto &v : t.iter(1)) {
-		Serial.print(v); Serial.print(" ");
-	}
-	Serial.println();
-}
+tensor<TYPE> input_tensor(inputs, 2, 1, 4);
+tensor<TYPE> output_tensor(outputs, 1, 1, 4);
 
 void setup() {
 	Serial.begin(115200);
-	Serial.println("Testing tensor class...");
+	Serial.println("Testing Training XOR NN with 3 hidden neurons...");
 
-	print_tensor_cr("1", tensor1);
-	print_tensor_cr("2", tensor2);
-	print_tensor_cr("3", tensor3);
-	print_tensor_cr("4", tensor4);
-
-	print_tensor_r("2", tensor2);
-	print_tensor("2", tensor2);
-
-	tensor<TYPE> copy = tensor2;
-	print_tensor_cr("copy", copy);
-
-	tensor<TYPE> resize;
-	resize.resize(2,2,2);
-	print_tensor_cr("resize", resize);
-
-	print_tensor_cr("window0", tensor2.window(0));
-	print_tensor_cr("window1", tensor2.window(1));
-	print_tensor_cr("window2", tensor2.window(2));
-	print_tensor_cr("window3", tensor2.window(3));
-
-	auto I = resize.begin(1);
-	auto num = resize.size();
-	while (num--) {
-		*I = num;
-		++I;
-	}
-	print_tensor_cr("write", resize);
-
-	Serial.print("Read val: "); Serial.print(resize[3]);
-	resize[3] = 57;
-	Serial.print("Write val: "); Serial.print(resize[3]);
-	print_tensor_cr("after write", resize);
-
+	unsigned long now = micros();
+	nn.train(input_tensor, output_tensor, trainer, 5000);
+	now = micros() - now;
+	Serial.print("Trained in: "); Serial.print(now); Serial.println("us");
 }
 
 void loop() {
+	TYPE o[4];
+	unsigned long now = micros();
+	TYPE * p = inputs;
+
+	for (int i = 0; i < 4; i++) {
+		input.inputs().copy(input_tensor.window(i));
+		nn.calculate();
+		o[i] = output.outputs()[0];
+		p += 2;
+	}
+
+	now = micros() - now;
+
+	Serial.print("Computed in: "); Serial.print(now); Serial.println("us");
+	for (int i = 0; i < 4; i++) {
+		Serial.print("Inputs: ");
+		Serial.print((float)inputs[i * 2]); Serial.print(", "); Serial.print((float)inputs[i * 2 + 1]); Serial.println();
+		Serial.print("Output: ");
+		Serial.print((float)o[i]); Serial.println();
+	}
+
 	delay(1000);
 }

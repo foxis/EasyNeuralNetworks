@@ -19,7 +19,9 @@ public:
 		: DenseLayer(input.outputs(), output.inputs(), activation) {}
 
 	DenseLayer(T_LAYER& input, T_LAYER& output, T_INPUT& weights, const T_ACTIVATION& activation)
-			: T_LAYER(input.outputs(), output.inputs(), weights, activation) {}
+			: T_LAYER(input.outputs(), output.inputs(), weights, activation) {
+		assert(weights.size() == (input.outputs().size() + ENN_BIAS) * output.inputs().size());
+	}
 
 	DenseLayer(T_LAYER& input, T_SIZE out_width, T_SIZE out_height, const T_ACTIVATION& activation)
 		: DenseLayer(input.outputs(), out_width, out_height, activation) {}
@@ -27,11 +29,25 @@ public:
 	DenseLayer(T_LAYER& input, T_SIZE num_outputs, const T_ACTIVATION& activation)
 		: DenseLayer(input.outputs(), num_outputs, activation) {}
 
+	DenseLayer(T_LAYER& input, T_SIZE num_outputs, T_INPUT& weights, const T_ACTIVATION& activation)
+		: T_LAYER(input.outputs(), activation) {
+		assert(weights.size() == (input.outputs().size() + ENN_BIAS) * num_outputs);
+		this->outputs().resize(num_outputs, 1, 1);
+		this->weights(weights);
+	}
+
+	DenseLayer(T_LAYER& input, T_SIZE out_width, T_SIZE out_height, T_INPUT& weights, const T_ACTIVATION& activation)
+		: T_LAYER(input.outputs(), activation) {
+		assert(weights.size() == (input.outputs().size() + ENN_BIAS) * out_width * out_height);
+		this->outputs().resize(out_width, out_height, 1);
+		this->weights(weights);
+	}
+
 	DenseLayer(T_INPUT& input, T_SIZE out_width, T_SIZE out_height, const T_ACTIVATION& activation)
 		: T_LAYER(input, activation)
 	{
 		this->outputs().resize(out_width, out_height, 1);
-		this->weights().resize(input.size(), this->outputs().size(), 1);
+		this->weights().resize(input.size() + ENN_BIAS, this->outputs().size(), 1);
 	}
 
 	DenseLayer(T_INPUT& input, T_SIZE num_outputs, const T_ACTIVATION& activation)
@@ -40,7 +56,7 @@ public:
 	DenseLayer(T_INPUT& input, T_INPUT& output, const T_ACTIVATION& activation)
 		: T_LAYER(input, output, activation)
 	{
-		this->weights().resize(input.size(), this->outputs().size(), 1);
+		this->weights().resize(input.size() + ENN_BIAS, this->outputs().size(), 1);
 	}
 
 	///

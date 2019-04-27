@@ -12,13 +12,11 @@ class InputLayer : public LayerBase<T, T_SIZE> {
 	ENN_T_INPUT_TYPEDEF(T_INPUT);
 	ENN_T_ACTIVATION_TYPEDEF(T_ACTIVATION);
 	ENN_T_LAYER_TYPEDEF(T_LAYER);
-	T_INPUT _errors;
 public:
 	InputLayer(T_SIZE width, T_SIZE height = 1, T_SIZE depth = 1) : T_LAYER(LUActivation<T, T_SIZE>()) {
 		this->inputs().resize(width, height, depth);
+		this->outputs(this->inputs());
 	}
-
-	InputLayer(T_INPUT& p) : T_LAYER(p, p, LUActivation<T, T_SIZE>()) { }
 
 	///
 	/// performs a forward calculation
