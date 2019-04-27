@@ -129,8 +129,8 @@ public:
 	inline operator T * () { return _data; }
 	inline operator const T* () const { return _data; }
 
-	inline const T& operator [] (T_SIZE i) const { return _data[i]; }
-	inline T& operator [] (T_SIZE i) { return _data[i]; }
+	inline const T& operator [] (int i) const { return _data[i]; }
+	inline T& operator [] (int i) { return _data[i]; }
 
 	// shape stuff
 	inline T_SIZE width() const { return _width; }
@@ -142,7 +142,7 @@ public:
 
 	// iterator stuff
 	inline iterator begin(T_SIZE stride) { return iterator(_data, stride); }
-	inline iterator end(T_SIZE stride) { return begin(stride) + _width * _height * _depth; }
+	inline iterator end(T_SIZE stride) { return begin(stride) + size(); }
 
 	inline iterator begin(T_SIZE y, T_SIZE z, T_SIZE stride) { return iterator(data + y * _width + z * _width * _height, stride); }
 	inline iterator end(T_SIZE y, T_SIZE z, T_SIZE stride) { return begin(y, z, stride) + _width; }
@@ -150,12 +150,12 @@ public:
 	inline iterator begin(T_SIZE z, T_SIZE stride) { return iterator(_data, _width * _height * z, stride); }
 	inline iterator end(T_SIZE z, T_SIZE stride) { return end(z, stride) + _width * _height; }
 
-	inline range iter() { return range(_data, 1, _width * _height * _depth); }
-	inline range iter(T_SIZE y, T_SIZE z) { return range(_data + y * _width + z * _width * _height, 1, _width); }
-	inline range iter(T_SIZE z) { return range(_data + z * _width * _height, 1, _width * _height); }
+	inline range iter(T_SIZE stride) { return range(_data, stride, _width * _height * _depth); }
+	inline range iter(T_SIZE y, T_SIZE z, T_SIZE stride) { return range(_data + y * _width + z * _width * _height, stride, _width); }
+	inline range iter(T_SIZE z, T_SIZE stride) { return range(_data + z * _width * _height, stride, _width * _height); }
 
 	inline const_iterator begin(T_SIZE stride) const { return const_iterator(_data, stride); }
-	inline const_iterator end(T_SIZE stride) const { return begin(stride) + _width * _height * _depth; }
+	inline const_iterator end(T_SIZE stride) const { return begin(stride) + size(); }
 
 	inline const_iterator begin(T_SIZE y, T_SIZE z, T_SIZE stride) const { return const_iterator(_data + y * _width + z * _width * _height, stride); }
 	inline const_iterator end(T_SIZE y, T_SIZE z, T_SIZE stride) const { return begin(y, z, stride) + _width; }
@@ -163,7 +163,7 @@ public:
 	inline const_iterator begin(T_SIZE z, T_SIZE stride) const { return const_iterator(_data, _width * _height * z, stride); }
 	inline const_iterator end(T_SIZE z, T_SIZE stride) const { return end(z, stride) + _width * _height; }
 
-	inline const_range iter(T_SIZE stride) const { return const_range(_data, stride, _width * _height * _depth); }
+	inline const_range iter(T_SIZE stride) const { return const_range(_data, stride, size()); }
 	inline const_range iter(T_SIZE y, T_SIZE z, T_SIZE stride) const { return const_range(_data + y * _width + z * _width * _height, stride, _width); }
 	inline const_range iter(T_SIZE z, T_SIZE stride) const { return const_range(_data + z * _width * _height, stride, _width * _height); }
 
@@ -177,8 +177,10 @@ public:
 	inline void owns(bool val) { _needs_free = val; }
 
 	inline void resize(T_SIZE width, T_SIZE height, T_SIZE depth) {
-		if (_data != NULL && _needs_free)
+		if (_data != NULL && _needs_free) {
 			delete[] _data;
+			Serial.println("deleted");
+		}
 		if (width == 0 || height == 0 || depth == 0) {
 			_width = _height = _depth = 0;
 			_data = NULL;
@@ -188,6 +190,7 @@ public:
 			_depth = depth;
 			_data = new T[width * height * depth];
 			_needs_free = true;
+			Serial.println("created new");
 		}
 	}
 
