@@ -4,9 +4,20 @@
 #include <iterator>
 #include <assert.h>
 
+
+#if !defined(ENN_DEFAULT_TYPE)
+#define ENN_DEFAULT_TYPE float
+#endif
+
+#if !defined(ENN_DEFAULT_SIZE_TYPE)
+#define ENN_DEFAULT_SIZE_TYPE uint16_t
+#endif
+
+#include <ProgmemHelper.h>
+
 namespace EasyNeuralNetworks {
 
-template<typename T, typename T_SIZE>
+template<typename T, typename T_SIZE = ENN_DEFAULT_SIZE_TYPE>
 class tensor {
 protected:
 	T * _data;
@@ -29,11 +40,13 @@ public:
 		iterator_(iterator_<IS_CONST> &i, T_SIZE stride) : iterator_<IS_CONST>(i.ptr, stride) {}
 		iterator_(T_TYPE ptr, T_SIZE stride) : ptr(ptr), stride(stride) { }
 		iterator_(const iterator_<false>& other) : ptr(other.ptr), stride(other.stride) {}
+		iterator_(const iterator_<true>& other) : ptr(other.ptr), stride(other.stride) {}
 		~iterator_() {}
 
 		inline iterator_<IS_CONST>  operator++(int) /* postfix */         { iterator_<IS_CONST> tmp(ptr, stride); ptr += stride; return tmp; }
     inline iterator_<IS_CONST>& operator++()    /* prefix */          { ptr += stride; return *this; }
-    inline T_TYPE_REF& operator* () const                    { return *ptr; }
+		inline T_TYPE_REF operator* () const                    { return *ptr; }
+		inline T_TYPE_REF operator* ()                    { return *ptr; }
     inline T_TYPE   operator->() const                    { return ptr; }
 		inline iterator_<IS_CONST>  operator+ (T_SIZE v)   const { return ptr + v; }
 		inline void operator >>= (T_SIZE v) { ptr += v; }
@@ -53,14 +66,18 @@ public:
 		range_(T * ptr, T_SIZE stride, T_SIZE size)
 			: _begin(ptr, stride), _end(ptr + size, stride) {
 		}
-		inline iterator_<true>& begin() const { return _begin; }
-		inline iterator_<true>& end() const { return _end; }
-		inline iterator_<false>& begin() { return _begin; }
-		inline iterator_<false>& end() { return _end; }
+
+		range_(const range_<false>& other) : _begin(other._begin), _end(other._end) {}
+		range_(const range_<true>& other) : _begin(other._begin), _end(other._end) {}
+
+		inline iterator_<IS_CONST> begin() const { return _begin; }
+		inline iterator_<IS_CONST> end() const { return _end; }
 
 		inline void operator += (T_SIZE v) { _begin += v; _end += v; }
 
 		inline void operator >>= (T_SIZE v) { _begin >>= v; _end >>= v; }
+
+		friend class range_<true>;
 	};
 
 	typedef iterator_<true> const_iterator;
@@ -84,17 +101,35 @@ public:
 		this->_depth = depth;
 		this->_needs_free = false;
 	}
+	tensor(const ProgmemHelper<T> & data, T_SIZE width, T_SIZE height, T_SIZE depth)
+		: tensor(new T[width * height * depth], width, height, depth) {
+		this->_needs_free = true;
+		data.read(this->_data, width * height * depth);
+	}
+	tensor(const tensor<T, T_SIZE>& t) {
+		*this = t;
+	}
 
 	~tensor() {
-		if (_needs_free && _data != NULL)
-			delete[] _data;
+		resize(0, 0, 0);
+	}
+
+	inline void operator = (const tensor<T, T_SIZE>& t) {
+		this->_data = t._data;
+		this->_width = t._width;
+		this->_height = t._height;
+		this->_depth = t._depth;
+		this->_needs_free = false;
 	}
 
 	// access stuff
 	inline T * data() { return _data; }
 	inline const T* data() const { return _data; }
 
-	inline T operator [] (T_SIZE i) const { return _data[i]; }
+	inline operator T * () { return _data; }
+	inline operator const T* () const { return _data; }
+
+	inline const T& operator [] (T_SIZE i) const { return _data[i]; }
 	inline T& operator [] (T_SIZE i) { return _data[i]; }
 
 	// shape stuff
@@ -106,37 +141,103 @@ public:
 	inline T_SIZE offset(T_SIZE x, T_SIZE y, T_SIZE z) const { return x + y * _width + z * _width * _height; }
 
 	// iterator stuff
-	iterator& begin(T_SIZE stride) { return iterator(_data, stride); }
-	iterator& end(T_SIZE stride) { return begin(stride) + _width * _height * _depth; }
+	inline iterator begin(T_SIZE stride) { return iterator(_data, stride); }
+	inline iterator end(T_SIZE stride) { return begin(stride) + _width * _height * _depth; }
 
-	iterator& begin(T_SIZE y, T_SIZE z, T_SIZE stride) { return iterator(data + y * _width + z * _width * _height, stride); }
-	iterator& end(T_SIZE y, T_SIZE z, T_SIZE stride) { return begin(y, z, stride) + _width; }
+	inline iterator begin(T_SIZE y, T_SIZE z, T_SIZE stride) { return iterator(data + y * _width + z * _width * _height, stride); }
+	inline iterator end(T_SIZE y, T_SIZE z, T_SIZE stride) { return begin(y, z, stride) + _width; }
 
-	iterator& begin(T_SIZE z, T_SIZE stride) { return iterator(_data, _width * _height * z, stride); }
-	iterator& end(T_SIZE z, T_SIZE stride) { return end(z, stride) + _width * _height; }
+	inline iterator begin(T_SIZE z, T_SIZE stride) { return iterator(_data, _width * _height * z, stride); }
+	inline iterator end(T_SIZE z, T_SIZE stride) { return end(z, stride) + _width * _height; }
 
-	range& iter() { return range(data, 1, _width * _height * _depth); }
-	range& iter(T_SIZE y, T_SIZE z) { return range(data + y * _width + z * _width * _height, 1, _width); }
-	range& iter(T_SIZE z) { return range(data + z * _width * _height, 1, _width * _height); }
+	inline range iter() { return range(_data, 1, _width * _height * _depth); }
+	inline range iter(T_SIZE y, T_SIZE z) { return range(_data + y * _width + z * _width * _height, 1, _width); }
+	inline range iter(T_SIZE z) { return range(_data + z * _width * _height, 1, _width * _height); }
 
-	const_iterator& begin(T_SIZE stride) const { return const_iterator(_data, stride); }
-	const_iterator& end(T_SIZE stride) const { return begin(stride) + _width * _height * _depth; }
+	inline const_iterator begin(T_SIZE stride) const { return const_iterator(_data, stride); }
+	inline const_iterator end(T_SIZE stride) const { return begin(stride) + _width * _height * _depth; }
 
-	const_iterator& begin(T_SIZE y, T_SIZE z, T_SIZE stride) const { return const_iterator(data + y * _width + z * _width * _height, stride); }
-	const_iterator& end(T_SIZE y, T_SIZE z, T_SIZE stride) const { return begin(y, z, stride) + _width; }
+	inline const_iterator begin(T_SIZE y, T_SIZE z, T_SIZE stride) const { return const_iterator(_data + y * _width + z * _width * _height, stride); }
+	inline const_iterator end(T_SIZE y, T_SIZE z, T_SIZE stride) const { return begin(y, z, stride) + _width; }
 
-	const_iterator& begin(T_SIZE z, T_SIZE stride) const { return const_iterator(_data, _width * _height * z, stride); }
-	const_iterator& end(T_SIZE z, T_SIZE stride) const { return end(z, stride) + _width * _height; }
+	inline const_iterator begin(T_SIZE z, T_SIZE stride) const { return const_iterator(_data, _width * _height * z, stride); }
+	inline const_iterator end(T_SIZE z, T_SIZE stride) const { return end(z, stride) + _width * _height; }
 
-	const_range& iter() const { return const_range(data, 1, _width * _height * _depth); }
-	const_range& iter(T_SIZE y, T_SIZE z) const { return const_range(data + y * _width + z * _width * _height, 1, _width); }
-	const_range& iter(T_SIZE z) const { return const_range(data + z * _width * _height, 1, _width * _height); }
+	inline const_range iter(T_SIZE stride) const { return const_range(_data, stride, _width * _height * _depth); }
+	inline const_range iter(T_SIZE y, T_SIZE z, T_SIZE stride) const { return const_range(_data + y * _width + z * _width * _height, stride, _width); }
+	inline const_range iter(T_SIZE z, T_SIZE stride) const { return const_range(_data + z * _width * _height, stride, _width * _height); }
 
-	tensor& window(T_SIZE z) { return tensor(data + z * _width * _height, width, height, 1); }
-	tensor& window(T_SIZE y, T_SIZE z) { return tensor(data + y * _width + z * _width * _height, _width, 1, 1); }
+	inline tensor<T, T_SIZE> window(T_SIZE z) { return tensor<T, T_SIZE>(_data + z * _width * _height, _width, _height, 1); }
+	inline tensor<T, T_SIZE> window(T_SIZE y, T_SIZE z) { return tensor<T, T_SIZE>(_data + y * _width + z * _width * _height, _width, 1, 1); }
 
-	const tensor& window(T_SIZE z) const { return tensor(data + z * _width * _height, width, height, 1); }
-	const tensor& window(T_SIZE y, T_SIZE z) const { return tensor(data + y * _width + z * _width * _height, _width, 1, 1); }
+	inline tensor<T, T_SIZE> window(T_SIZE z) const { return tensor<T, T_SIZE>(_data + z * _width * _height, _width, _height, 1); }
+	inline tensor<T, T_SIZE> window(T_SIZE y, T_SIZE z) const { return tensor<T, T_SIZE>(_data + y * _width + z * _width * _height, _width, 1, 1); }
+
+	inline bool owns() const { return _needs_free; }
+	inline void owns(bool val) { _needs_free = val; }
+
+	inline void resize(T_SIZE width, T_SIZE height, T_SIZE depth) {
+		if (_data != NULL && _needs_free)
+			delete[] _data;
+		if (width == 0 || height == 0 || depth == 0) {
+			_width = _height = _depth = 0;
+			_data = NULL;
+		} else {
+			_width = width;
+			_height = height;
+			_depth = depth;
+			_data = new T[width * height * depth];
+			_needs_free = true;
+		}
+	}
+
+	inline tensor<T, T_SIZE> clone(bool copy=false) {
+		tensor<T, T_SIZE> tmp(_width, _height, _depth);
+		if (copy)
+			tmp->copy<true>(*this);
+		tmp.owns(false);
+		return tmp;
+	}
+	inline void fill(T val) {
+		for (auto &p : iter())
+			p = val;
+	}
+	inline void map(std::function<T (T_SIZE idx, T val, void * params)> setter, void * params = NULL) {
+		T_SIZE i = 0;
+		for (auto &p : iter())
+			p = setter(i++, p, params);
+	}
+
+	inline void copy(const T * src, T_SIZE stride=1) {
+		memcpy(_data, src, sizeof(T) * size());
+	}
+
+	template<bool RAW>
+	inline void copy(const tensor<T, T_SIZE>& src, T_SIZE stride=1) {
+		assert(size() == src.size());
+
+		if (RAW) {
+			copy(src._data, stride);
+		}
+		else {
+			auto S = src.begin(stride);
+			auto D = begin(stride);
+			auto Se = src.end(stride);
+			auto De = end(stride);
+			while (S != Se && D != De) {
+				*D = *S;
+				++D;
+				++S;
+			}
+		}
+	}
+};
+
+template<typename T, size_t width, size_t height, size_t depth, typename T_SIZE = ENN_DEFAULT_SIZE_TYPE>
+class static_tensor : public tensor<T, T_SIZE> {
+	T _arr[width * height * depth];
+public:
+	static_tensor() : tensor<T, T_SIZE>(&_arr, width, height, depth) {}
 };
 
 };

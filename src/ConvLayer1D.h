@@ -2,7 +2,6 @@
 #define ENN_CONV_LAYER_1D_H
 
 #include <LayerBase.h>
-#include <ProgmemHelper.h>
 
 namespace EasyNeuralNetworks {
 
@@ -10,12 +9,12 @@ template <typename T = ENN_DEFAULT_TYPE,
 				  bool BIAS = ENN_DEFAULT_BIAS,
 					typename T_SIZE = ENN_DEFAULT_SIZE_TYPE>
 class ConvLayer1D : public LayerBase<T, BIAS, T_SIZE> {
-	T * _weights;
-	T * _errors;
+	T_INPUT _weights;
+	T_INPUT _errors;
+
 	T_SIZE _kernel_size;
 	T_SIZE _num_kernels;
 	T_SIZE _stride;
-	T_SIZE _neuron_size;
 	#define ENN_CONV_NEURON_SIZE(N_IN, K, STRIDE) ( ((N_IN) - (K)) / (STRIDE) + 1)
 	#define ENN_CONV_OUTPUT_SIZE(N_IN, K, NK, STRIDE) (ENN_CONV_NEURON_SIZE(N_IN, K, STRIDE) * NK)
 public:
@@ -60,19 +59,16 @@ public:
 	///
 	/// returns a pointer to errors
 	///
-	virtual inline const T* errors() const { return _errors; }
-	virtual inline T* errors() { return _errors; }
-	virtual inline void errors(T * errors)  { _errors = errors; }
-	virtual inline T_SIZE num_errors() const { return this->num_inputs(); }
-
+	virtual inline const T_INPUT& errors() const { return _errors; }
+	virtual inline T_INPUT& errors() { return _errors; }
+	virtual inline void errors(T_INPUT& errors)  { _errors = errors; }
 
 	///
 	/// returns a pointer to weights
 	///
-	virtual inline const T* weights() const { return _weights; };
-	virtual inline T* weights() { return _weights; };
-	virtual inline void weights(T * weights) { _weights = weights; };
-	virtual inline T_SIZE num_weights() const { return (this->_kernel_size + ENN_BIAS) * this->_num_kernels; }
+	virtual inline const T_INPUT& weights() const { return _weights; };
+	virtual inline T_INPUT& weights() { return _weights; };
+	virtual inline void weights(T_INPUT& weights) { _weights = weights; };
 
 	///
 	/// performs a forward calculation

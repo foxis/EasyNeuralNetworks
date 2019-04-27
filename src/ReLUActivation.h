@@ -5,8 +5,8 @@
 
 namespace EasyNeuralNetworks {
 
-template <typename T = ENN_DEFAULT_TYPE>
-class ReLUActivation : public ActivationBase<T> {
+template <typename T = ENN_DEFAULT_TYPE, typename T_SIZE = ENN_DEFAULT_SIZE_TYPE>
+class ReLUActivation : public ActivationBase<T, T_SIZE> {
 	T _negative_d;
 public:
 	ReLUActivation() { _negative_d = 0; }

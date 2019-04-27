@@ -13,80 +13,86 @@
 #include <SoftplusActivation.h>
 #include <InputLayer.h>
 #include <DenseLayer.h>
-#include <DropOutLayer.h>
-#include <ConvLayer1D.h>
-#include <ConvLayer2D.h>
-#include <ConvLayer3D.h>
-#include <PoolingLayer1D.h>
-#include <ProgmemHelper.h>
+//#include <DropOutLayer.h>
+//#include <ConvLayer1D.h>
+//#include <ConvLayer2D.h>
+//#include <ConvLayer3D.h>
+//#include <PoolingLayer1D.h>
 #include <FixedPointType.h>
 
 namespace EasyNeuralNetworks {
 
-template<typename T>
+#define ENN_T_LOSS_TYPEDEF(T_LOSS_NAME) typedef LossFunctionBase<T, T_SIZE> T_LOSS_NAME;
+
+template<typename T, typename T_SIZE>
 class LossFunctionBase {
 public:
-	virtual T operator () (T * deltas, const T * target, const T * output, size_t num) const = 0;
+	virtual T operator () (tensor<T, T_SIZE>& deltas, const tensor<T, T_SIZE>& target, const tensor<T, T_SIZE>& output) const = 0;
 
 	#define ENN_LOSS_LOOP(DELTA, ACC) \
 		T acc = 0;	\
+		assert(deltas.size() == target.size() && deltas.size() == output.size()); \
+		auto num = output.size(); \
+		auto D = deltas.begin(1); \
+		auto Ta = target.begin(1); \
+		auto O = output.begin(1); \
 		while (num--) {	\
-			*deltas = DELTA;	\
+			*D = DELTA;	\
 			acc += ACC;	\
-			++target;	\
-			++output;	\
-			++deltas;	\
+			++Ta;	\
+			++O;	\
+			++D;	\
 		}	\
 		return acc;
 };
 
-template<typename T>
-class L2Loss : public LossFunctionBase<T> {
+template<typename T, typename T_SIZE = ENN_DEFAULT_SIZE_TYPE>
+class L2Loss : public LossFunctionBase<T, T_SIZE> {
 public:
-	virtual T operator () (T * deltas, const T * target, const T * output, size_t num) const {
-		ENN_LOSS_LOOP(*output - *target, *deltas * *deltas)
+	virtual T operator () (tensor<T, T_SIZE>& deltas, const tensor<T, T_SIZE>& target, const tensor<T, T_SIZE>& output) const {
+		ENN_LOSS_LOOP(*O - *Ta, *D * *D)
 	}
 };
 
-template<typename T>
-class L1Loss : public LossFunctionBase<T> {
+template<typename T, typename T_SIZE = ENN_DEFAULT_SIZE_TYPE>
+class L1Loss : public LossFunctionBase<T, T_SIZE> {
 public:
-	virtual T operator () (T * deltas, const T * target, const T * output, size_t num) const {
-		ENN_LOSS_LOOP((*target < *output ? 1 : *target > *output ? -1 : 0), abs(*deltas))
+	virtual T operator () (tensor<T, T_SIZE>& deltas, const tensor<T, T_SIZE>& target, const tensor<T, T_SIZE>& output) const {
+		ENN_LOSS_LOOP((*Ta < *O ? 1 : *Ta > *O ? -1 : 0), abs(*D))
 	}
 };
 
-template<typename T>
-class CrossEntropy : public LossFunctionBase<T> {
+template<typename T, typename T_SIZE = ENN_DEFAULT_SIZE_TYPE>
+class CrossEntropy : public LossFunctionBase<T, T_SIZE> {
 public:
-	virtual T operator () (T * deltas, const T * target, const T * output, size_t num) const {
-		ENN_LOSS_LOOP(*target * log(*output), -*deltas)
+	virtual T operator () (tensor<T, T_SIZE>& deltas, const tensor<T, T_SIZE>& target, const tensor<T, T_SIZE>& output) const {
+		ENN_LOSS_LOOP(*Ta * log(*O), -*D)
 	}
 };
 
 
-template<typename T, bool BIAS = ENN_DEFAULT_BIAS, typename T_SIZE = ENN_DEFAULT_SIZE_TYPE>
+template<typename T, typename T_SIZE = ENN_DEFAULT_SIZE_TYPE>
 class NeuralNetwork;
 
-template<typename T, bool BIAS, typename T_SIZE>
+template<typename T, typename T_SIZE>
 class TrainerBase {
 protected:
-	typedef LayerBase<T, BIAS, T_SIZE>* T_LAYER;
-	std::vector<const T*> inputs;
-	std::vector<const T*> outputs;
-	std::vector<T_LAYER> layers;
-	NeuralNetwork<T, BIAS, T_SIZE>* network;
+	ENN_T_LAYER_TYPEDEF(T_LAYER);
+	tensor<float, T_SIZE> inputs;
+	tensor<float, T_SIZE> outputs;
+	std::vector<T_LAYER*> layers;
+	NeuralNetwork<T, T_SIZE>* network;
 
 	T_SIZE num_inputs;
 	T_SIZE num_outputs;
-	T_LAYER first;
-	T_LAYER last;
+	T_LAYER *first;
+	T_LAYER *last;
 
 public:
 	TrainerBase()
 	{	}
 
-	virtual void init(const std::vector<const T*> &inputs, const std::vector<const T*> &outputs, NeuralNetwork<T, BIAS, T_SIZE>* network) {
+	virtual void init(const tensor<float, T_SIZE> &inputs, const tensor<float, T_SIZE> &outputs, NeuralNetwork<T, T_SIZE>* network) {
 		this->inputs = inputs;
 		this->outputs = outputs;
 		this->layers = network->layers();
@@ -95,8 +101,8 @@ public:
 		this->first = network->input();
 		this->last = network->output();
 
-		this->num_inputs = first->num_inputs();
-		this->num_outputs = last->num_outputs();
+		this->num_inputs = first->inputs().size();
+		this->num_outputs = last->outputs().size();
 	}
 
 	virtual void clean() = 0;
@@ -104,17 +110,17 @@ public:
 	virtual void fit(size_t epochs) = 0;
 };
 
-template<typename T, bool BIAS, typename T_SIZE>
+template<typename T, typename T_SIZE>
 class NeuralNetwork {
-	typedef LayerBase<T, BIAS, T_SIZE>* T_LAYER;
-	std::vector<T_LAYER> _layers;
+	ENN_T_LAYER_TYPEDEF(T_LAYER);
+	std::vector<T_LAYER*> _layers;
 
 public:
 	NeuralNetwork(T_SIZE num_layers, ...) {
 		va_list layers;
 		va_start(layers, num_layers);
 		for (T_SIZE i = 0; i < num_layers; i++) {
-			_layers.push_back(va_arg( layers, T_LAYER ));
+			_layers.push_back(va_arg( layers, T_LAYER* ));
 		}
 		va_end(layers);
 
@@ -123,17 +129,13 @@ public:
 #endif
 	}
 
-	std::vector<T_LAYER>& layers() { return _layers; }
-	T_LAYER input() { return _layers.front(); }
-	T_LAYER output() { return _layers.back(); }
+	std::vector<T_LAYER*>& layers() { return _layers; }
+	T_LAYER* input() { return _layers.front(); }
+	T_LAYER* output() { return _layers.back(); }
 
 	void calculate() {
-		typename std::vector<T_LAYER>::iterator p = _layers.begin();
-
-		while (p != _layers.end()) {
-			(*p)->forward();
-			++p;
-		}
+		for (auto * L : _layers)
+			L->forward();
 	}
 
 	///
@@ -141,21 +143,10 @@ public:
 	///
 	/// Note that the size of inputs_arr and outputs_arr must be equal to N*num_data and M*num_data
 	/// where N is the number of input and M is the number of output neurons
-	void train(const T * inputs_arr, const T * outputs_arr, size_t num_data, TrainerBase<T, BIAS, T_SIZE> &trainer, size_t epochs, bool clean=true) {
-		std::vector<const T*> inputs;
-		std::vector<const T*> outputs;
-
-		for (size_t i = 0; i < num_data; i++) {
-			inputs.push_back(inputs_arr);
-			outputs.push_back(outputs_arr);
-			inputs_arr += _layers.front()->num_inputs();
-			outputs_arr += _layers.back()->num_outputs();
-		}
-
-		train(inputs, outputs, trainer, epochs, clean);
-	}
-
-	void train(const std::vector<const T*> &inputs, const std::vector<const T*> &outputs, TrainerBase<T, BIAS, T_SIZE> &trainer, size_t epochs, bool clean=true) {
+	void train(const tensor<float, T_SIZE> &inputs, const tensor<float, T_SIZE> &outputs, TrainerBase<T, T_SIZE> &trainer, size_t epochs, bool clean=true) {
+		assert(inputs.depth() == outputs.depth() &&
+			inputs.width() == input()->inputs().width() && inputs.height() == input()->inputs().height() &&
+			outputs.width() == output()->outputs().width() && outputs.height() == output()->outputs().height());
 		trainer.init(inputs, outputs, this);
 		trainer.fit(epochs);
 		if (clean)

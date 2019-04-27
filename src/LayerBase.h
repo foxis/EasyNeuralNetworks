@@ -1,14 +1,6 @@
 #if !defined(ENN_LAYER_BASE_H)
 #define ENN_LAYER_BASE_H
 
-#if !defined(ENN_DEFAULT_TYPE)
-#define ENN_DEFAULT_TYPE float
-#endif
-
-#if !defined(ENN_DEFAULT_SIZE_TYPE)
-#define ENN_DEFAULT_SIZE_TYPE uint16_t
-#endif
-
 #if !defined(ENN_DEFAULT_ACTIVATION)
 #define ENN_DEFAULT_ACTIVATION(TYPE) ReLUActivation<TYPE>
 #endif
@@ -21,179 +13,120 @@
 
 namespace EasyNeuralNetworks {
 
-template<typename T>
+template<typename T, typename T_SIZE>
 class ActivationBase {
 public:
 	virtual T forward(T val) const = 0;
 	virtual T backward(T val) const = 0;
 
-	inline void apply_forward_inplace(T * a, size_t num) const {
-			for (size_t i = 0; i < num; i++) {
-				*a = forward(*a);
-				++a;
-			}
+	inline void apply_forward_inplace(tensor<T, T_SIZE>& a) const {
+		auto I = a.begin(1);
+		auto num = a.size();
+
+		while (num--) {
+			*I = forward(*I);
+			++I;
+		}
 	}
 
-	inline void apply_backward_inplace(T * d, const T * o, size_t num) const {
-		for (size_t i = 0; i < num; i++) {
-			*d = *d * backward(*o);
-			++d;
-			++o;
+	inline void apply_backward_inplace(tensor<T, T_SIZE>& deltas, const tensor<T, T_SIZE>& outputs) const {
+		assert(deltas.size() == outputs.size());
+		auto D = deltas.begin(1);
+		auto O = outputs.begin(1);
+		auto num = outputs.size();
+		while (num) {
+			*D = *D * backward(*O);
+			++D;
+			++O;
 		}
 	}
 };
 
+#define ENN_T_INPUT_TYPEDEF(T_INPUT_NAME) typedef tensor<T, T_SIZE> T_INPUT_NAME;
+#define ENN_T_ACTIVATION_TYPEDEF(T_ACTIVATION_NAME) typedef ActivationBase<T, T_SIZE> T_ACTIVATION_NAME;
+#define ENN_T_LAYER_TYPEDEF(T_LAYER_NAME) typedef LayerBase<T, T_SIZE> T_LAYER_NAME;
 ///
 /// A abstract base layer class
 /// stores pointers to layer inputs and outputs along with their sizes
 ///
-template <typename T, bool BIAS, typename T_SIZE>
+template <typename T, typename T_SIZE>
 class LayerBase {
 protected:
-	T_SIZE _num_inputs;
-	T_SIZE _num_outputs;
-	T* _inputs;
-	T* _outputs;
-	const ActivationBase<T> &_activation;
-
+	ENN_T_LAYER_TYPEDEF(T_LAYER);
+	ENN_T_INPUT_TYPEDEF(T_INPUT);
+	ENN_T_ACTIVATION_TYPEDEF(T_ACTIVATION);
+	T_INPUT _inputs;
+	T_INPUT _outputs;
+	T_INPUT _weights;
+	T_INPUT _gradients;
+	const T_ACTIVATION& _activation;
 public:
-	///
-	///
-	///
-	LayerBase(T* inputs, T_SIZE num_inputs, T* outputs, T_SIZE num_outputs, const ActivationBase<T>& activation)
-	 		: _activation(activation) {
-		_num_inputs = num_inputs;
-		_num_outputs = num_outputs;
-		_inputs = inputs;
-		_outputs = outputs;
-	}
+	LayerBase(const T_ACTIVATION& activation) : _activation(activation) {	}
+
+	LayerBase(T_LAYER& input, const T_ACTIVATION& activation)
+	 		: _inputs(input.outputs()), _activation(activation) {	}
+
+	LayerBase(T_INPUT& inputs, const T_ACTIVATION& activation)
+	 		: _inputs(inputs), _activation(activation) {	}
+
+	LayerBase(T_LAYER& input, T_LAYER& output, T_INPUT& weights, const T_ACTIVATION& activation)
+	 		: _inputs(input.outputs()), _outputs(output.inputs()), _weights(weights), _activation(activation) {	}
+
+	LayerBase(T_INPUT& inputs, T_INPUT& outputs, T_INPUT& weights, const T_ACTIVATION& activation)
+	 		: _inputs(inputs), _outputs(outputs), _weights(weights), _activation(activation) {	}
 
 	///
 	///
 	///
-	LayerBase(LayerBase &input, T* outputs, T_SIZE num_outputs, const ActivationBase<T>& activation)
-		: _activation(activation) {
-		_num_inputs = input.num_outputs();
-		_inputs = input.outputs();
-		_num_outputs = num_outputs;
-		_outputs = outputs;
-	}
+	inline const T_ACTIVATION& activation() const { return _activation; }
+	inline void activation(T_ACTIVATION& act) const { _activation = act; }
+
+	///
+	/// gradients calculated for the inputs
+	///
+	virtual inline const T_INPUT& gradients() const { return _gradients; }
+	virtual inline T_INPUT& gradients() { return _gradients; }
+	virtual inline void gradients(T_INPUT& gradients)  { _gradients = gradients; }
 
 	///
 	///
 	///
-	inline const ActivationBase<T>& activation() const { return _activation; }
-	inline void activation(const ActivationBase<T>& act) const { _activation = act; }
+	inline const T_INPUT& inputs() const { return _inputs; }
+	inline T_INPUT& inputs() { return _inputs; }
+	inline void inputs(T_INPUT& inputs) { _inputs = inputs; }
 
 	///
-	/// returns a const pointer to inputs
 	///
-	inline const T* inputs() const { return _inputs; }
-	inline T* inputs() { return _inputs; }
-	inline T_SIZE num_inputs() const { return _num_inputs; }
-	inline void inputs(T * inputs) { _inputs = inputs; }
+	///
+	inline T_INPUT& outputs() { return _outputs; }
+	inline const T_INPUT& outputs() const { return _outputs; }
+	inline void outputs(T_INPUT& outputs) { _outputs = outputs; }
 
 	///
-	/// returns a pointer to outputs
 	///
-	inline T* outputs() { return _outputs; }
-	inline const T* outputs() const { return _outputs; }
-	inline T_SIZE num_outputs() const { return _num_outputs; }
-	inline void outputs(T * outputs) { _outputs = outputs; }
-
 	///
-	/// returns a pointer to errors
-	///
-	virtual const T* errors() const = 0;
-	virtual T* errors() = 0;
-	virtual void errors(T * errors) = 0;
-	virtual T_SIZE num_errors() const = 0;
-
-	///
-	/// returns a pointer to weights
-	///
-	virtual const T* weights() const = 0;
-	virtual T* weights() = 0;
-	virtual void weights(T * weights) = 0;
-	virtual T_SIZE num_weights() const = 0;
+	virtual inline const T_INPUT& weights() const { return _weights; };
+	virtual inline T_INPUT& weights() { return _weights; };
+	virtual inline void weights(T_INPUT& weights) { _weights = weights; };
 
 	///
 	/// performs a forward calculation
-	/// outputs() will write the result in output data
+	/// outputs() will write the result in output
 	virtual void forward() = 0;
+
+	virtual void training_begin() = 0;
+	virtual void training_end() = 0;
 
 	///
 	/// performs error back propagation.
-	/// will calculate errors for the inputs.
-	/// will modify errors inplace
-	virtual void backward(T * deltas) = 0;
+	/// will calculate gradients for the inputs.
+	/// will modify deltas inplace
+	virtual void backward(T_INPUT& deltas) = 0;
 
 	///
-	/// will update the weights calculated in backwards
+	/// will update the weights based on gradients
 	///
-	/// alpha is the multiplier determining how much to adjust the weights
-	/// based on errors
-	virtual void update(const T * deltas, T alpha) = 0;
-
-
-	///
-	/// will calculate the output for 1d convolutional network
-	/// NOTE:
-	///   Ii, where i < N
-	///   Wij where i < width and j < K
-	///   Ojk where j < K, k < N - width
-	///   N - number of inputs
-	///	  K - number of kernels
-	///   width - kernel size
-	///
-	///   Okj = SUMi I(i + k) * Wij
-	///
-	///  Wij = W_arr(i + j * N)
-	///  Okj = O_arr(k + j * (N - width))
-	inline void calc_conv_1d(const T * wights, T_SIZE width, T_SIZE kernels) {
-		T acc;
-		T_SIZE i, j, k;
-		const T * in_p;
-		const T * w_p;
-		T * out_p;
-		T_SIZE NW = _num_inputs - width;
-
-		// iterate over kernels
-		for (j = 0, out_p = _outputs; j < kernels; j++) {
-			// convolve
-			for (k = 0; k < NW; k++) {
-				acc = 0;
-				w_p = weights + j * width;
-				in_p = _inputs + k;
-
-				for (i = 0; i < width; i++) {
-					acc += (*in_p) * (*w_p);
-
-					++in_p;
-					++w_p;
-				}
-
-				if (BIAS) {
-					acc += (*w_p);
-					++w_p;
-				}
-				*out_p = _activation.forward(acc);
-				++out_p;
-			}
-		}
-	}
-
-	///
-	/// will calculate the output for 2d convolutional network
-	/// TODO
-	inline void calc_conv_2d(const T * kernel, T_SIZE width, T_SIZE height, bool bias) {
-		T acc;
-		T_SIZE out_i;
-		T_SIZE in_i;
-		const T * in_p;
-		const T * w_p;
-		T * out_p;
-	}
+	virtual void update(const T_INPUT& gradients, T alpha) = 0;
 };
 
 };

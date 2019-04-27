@@ -6,8 +6,8 @@
 
 namespace EasyNeuralNetworks {
 
-template <typename T = ENN_DEFAULT_TYPE>
-class SoftplusActivation : public ActivationBase<T> {
+template <typename T = ENN_DEFAULT_TYPE, typename T_SIZE = ENN_DEFAULT_SIZE_TYPE>
+class SoftplusActivation : public ActivationBase<T, T_SIZE> {
 public:
 	inline virtual T forward(T val) const
 	{
