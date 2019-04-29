@@ -34,8 +34,8 @@ public:
 		_kernel_width = kernel_width;
 		_kernel_height = kernel_height;
 		this->inputs().resize(width, height, depth);
-		this->outputs().resize((input.width() - kernel_width) / stride + 1, (input.height() - kernel_height) + 1, num_kernels);
-		this->weights().resize(kernel_width * kernel_height * input.depth() + ENN_BIAS, 1, num_kernels);
+		this->outputs().resize((width - kernel_width) / stride + 1, (height - kernel_height) / stride + 1, num_kernels);
+		this->weights().resize(kernel_width * kernel_height * depth + ENN_BIAS, 1, num_kernels);
 	}
 
 	///
@@ -57,8 +57,8 @@ public:
 			auto feature_map = this->outputs().window(i, 1);
 			auto kernel = this->weights().window(i, 1);
 			for (T_SIZE channel = 0; channel < this->inputs().depth(); channel++) {
-				T * W = kernel.data() + channel * _kernel_size;
-				convolve_1d_add<T, false, T_SIZE, false>(feature_map, this->inputs(), W, input_size, _kernel_size, _stride);
+				T * W = kernel.data() + channel * _kernel_width * _kernel_height;
+				convolve_2d_add<T, T_SIZE, false>(feature_map, this->inputs().data(channel), W, this->inputs().width(), this->inputs.height(), _kernel_width, _kernel_height, _stride);
 			}
 			sum_arr_add<T, T_SIZE>(feature_map, kernel[kernel.size() - 1], feature_map.size());
 		}
@@ -86,6 +86,15 @@ public:
 		// apply activation derivative
 		this->_activation.apply_backward_inplace(gradients, this->outputs());
 
+		this->gradients().fill(0);
+		for (T_SIZE i = 0; i < this->weights().depth(); i ++) {
+			auto kernel = this->weights().window(i, 1);
+			auto G = gradients.data(i);
+			for (T_SIZE channel = 0; channel < this->inputs().depth(); channel++) {
+				T * W = kernel.data() + channel * _kernel_width;
+				convolve_2d_add<T, T_SIZE, true>(gradients().data(channel), G, W, this->inputs().width(), this->inputs().height(), _kernel_width, _kernel_height, _stride);
+			}
+		}
 	}
 
 	///
@@ -93,19 +102,6 @@ public:
 	///
 	virtual void update(const T_INPUT& gradients, T alpha)
 	{
-	}
-
-	inline T zip_mul_sum(const T * u, const T * v, T_SIZE N, T_SIZE M, T_SIZE stride) {
-		T acc = 0;
-		while (N && M) {
-			acc += *u * *v;
-			N -= stride;
-			--M;
-			u -= stride;
-			++v;
-		}
-
-		return acc;
 	}
 };
 

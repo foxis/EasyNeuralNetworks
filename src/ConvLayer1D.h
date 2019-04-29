@@ -66,15 +66,13 @@ public:
 	///
 	virtual void forward()
 	{
-		T_SIZE input_size = this->inputs().width();
-
 		this->outputs().fill(0);
 		for (T_SIZE i = 0; i < this->weights().depth(); i ++) {
 			auto feature_map = this->outputs().window(i, 1);
 			auto kernel = this->weights().window(i, 1);
 			for (T_SIZE channel = 0; channel < this->inputs().depth(); channel++) {
 				T * W = kernel.data() + channel * _kernel_width;
-				convolve_1d_add<T, false, T_SIZE, false>(feature_map, this->inputs(), W, input_size, _kernel_width, _stride);
+				convolve_1d_add<T, T_SIZE, false>(feature_map, this->inputs().data(channel), W, this->inputs().width(), _kernel_width, _stride);
 			}
 			sum_arr_add<T, T_SIZE>(feature_map, kernel[kernel.size() - 1], feature_map.size());
 		}
@@ -98,6 +96,15 @@ public:
 		// apply activation derivative
 		this->_activation.apply_backward_inplace(gradients, this->outputs());
 
+		this->gradients().fill(0);
+		for (T_SIZE i = 0; i < this->weights().depth(); i ++) {
+			auto kernel = this->weights().window(i, 1);
+			auto G = gradients.data(i);
+			for (T_SIZE channel = 0; channel < this->inputs().depth(); channel++) {
+				T * W = kernel.data() + channel * _kernel_width;
+				convolve_1d_add<T, T_SIZE, true>(gradients().data(channel), G, W, this->inputs().width(), _kernel_width, _stride);
+			}
+		}
 	}
 
 	///
@@ -105,19 +112,6 @@ public:
 	///
 	virtual void update(const T_INPUT& gradients, T alpha)
 	{
-	}
-
-	inline T zip_mul_sum(const T * u, const T * v, T_SIZE N, T_SIZE M, T_SIZE stride) {
-		T acc = 0;
-		while (N && M) {
-			acc += *u * *v;
-			N -= stride;
-			--M;
-			u -= stride;
-			++v;
-		}
-
-		return acc;
 	}
 };
 

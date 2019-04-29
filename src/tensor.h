@@ -203,6 +203,17 @@ public:
 		resize(src.width(), src.height(), src.depth());
 	}
 
+	inline void reshape(T_SIZE width, T_SIZE height, T_SIZE depth) {
+		assert(width * height * depth == size());
+		_width = width;
+		_height = height;
+		_depth = depth;
+	}
+
+	inline void reshape(const tensor<T, T_SIZE>& src) {
+		reshape(src.width(), src.height(), src.depth());
+	}
+
 	inline tensor<T, T_SIZE> clone(bool copy=true) const {
 		tensor<T, T_SIZE> tmp(width(), height(), depth());
 		if (copy)
