@@ -13,8 +13,8 @@
 #include <SoftplusActivation.h>
 #include <InputLayer.h>
 #include <DenseLayer.h>
-//#include <DropOutLayer.h>
-//#include <ConvLayer1D.h>
+#include <DropOutLayer.h>
+#include <ConvLayer1D.h>
 //#include <ConvLayer2D.h>
 //#include <ConvLayer3D.h>
 //#include <PoolingLayer1D.h>
@@ -77,14 +77,12 @@ class NeuralNetwork;
 template<typename T, typename T_SIZE>
 class TrainerBase {
 protected:
+	ENN_T_INPUT_TYPEDEF(T_INPUT);
 	ENN_T_LAYER_TYPEDEF(T_LAYER);
-	tensor<float, T_SIZE> inputs;
-	tensor<float, T_SIZE> outputs;
+	T_INPUT inputs;
+	T_INPUT outputs;
 	std::vector<T_LAYER*> layers;
 	NeuralNetwork<T, T_SIZE>* network;
-
-	T_SIZE num_inputs;
-	T_SIZE num_outputs;
 	T_LAYER *first;
 	T_LAYER *last;
 
@@ -92,17 +90,13 @@ public:
 	TrainerBase()
 	{	}
 
-	virtual void init(const tensor<float, T_SIZE> &inputs, const tensor<float, T_SIZE> &outputs, NeuralNetwork<T, T_SIZE>* network) {
-		this->inputs = inputs;
-		this->outputs = outputs;
+	virtual void init(const T_INPUT &inputs, const T_INPUT &outputs, NeuralNetwork<T, T_SIZE>* network) {
 		this->layers = network->layers();
 		this->network = network;
-
 		this->first = network->input();
 		this->last = network->output();
-
-		this->num_inputs = first->inputs().size();
-		this->num_outputs = last->outputs().size();
+		this->inputs = inputs;
+		this->outputs = outputs;
 	}
 
 	virtual void clean() = 0;
@@ -113,6 +107,7 @@ public:
 template<typename T, typename T_SIZE>
 class NeuralNetwork {
 	ENN_T_LAYER_TYPEDEF(T_LAYER);
+	ENN_T_INPUT_TYPEDEF(T_INPUT);
 	std::vector<T_LAYER*> _layers;
 
 public:
@@ -123,30 +118,39 @@ public:
 			_layers.push_back(va_arg( layers, T_LAYER* ));
 		}
 		va_end(layers);
-
-#if defined(DEBUG)
-		// todo sanity checks for layer in/out
-#endif
 	}
 
-	std::vector<T_LAYER*>& layers() { return _layers; }
-	T_LAYER* input() { return _layers.front(); }
-	T_LAYER* output() { return _layers.back(); }
+	inline std::vector<T_LAYER*>& layers() { return _layers; }
+	inline T_LAYER* input() { return _layers.front(); }
+	inline T_LAYER* output() { return _layers.back(); }
 
-	void calculate() {
-		for (auto * L : _layers)
+	inline void calculate() {
+		for (auto & L : _layers)
 			L->forward();
 	}
 
 	///
 	/// Will use supplied trainer to fit NN to supplied input/output training data
 	///
-	/// Note that the size of inputs_arr and outputs_arr must be equal to N*num_data and M*num_data
-	/// where N is the number of input and M is the number of output neurons
-	void train(const tensor<float, T_SIZE> &inputs, const tensor<float, T_SIZE> &outputs, TrainerBase<T, T_SIZE> &trainer, size_t epochs, bool clean=true) {
-		assert(inputs.depth() == outputs.depth() &&
-			inputs.width() == input()->inputs().width() && inputs.height() == input()->inputs().height() &&
-			outputs.width() == output()->outputs().width() && outputs.height() == output()->outputs().height());
+	/// inputs is a tensor containing training input data
+	/// outputs is a tensor containing training output data (a.k.a. target)
+	/// the sizes of inputs and outputs must match those of the network inputs and outputs.
+	/// inputs/outputs are stacked on a depth dimention, meaning that
+	/// if e.g. input depth is 3, then the depth of inputs tensor should be multiple of 3
+	///  and input samples will be stacked on a depth dimention like that:
+	///   [z=00, z=01, z=02, z=10, z=11, z=12, etc.], where z=ij and i is the input number and j is the z of the input tensor;
+	///   basically inputs will receive a tenzor i of depth=3, where j is the z of that tensor.
+	/// outputs are organized in the same manner.
+	/// Additionally number of stacked input tensors must be equal to the number of stacked output tensors.
+	/// in thi sexample if output layer has depth=1, then outputs should look like this:
+	/// [o=10, o=20, etc.]
+	void train(const T_INPUT &inputs, const T_INPUT &outputs, TrainerBase<T, T_SIZE> &trainer, size_t epochs, bool clean=true) {
+		// check the sizes of inputs and outputs
+		assert(inputs.depth() % input()->inputs().depth() == 0);
+		assert(outputs.depth() % output()->outputs().depth() == 0);
+		assert(inputs.depth() / input()->inputs().depth() ==
+					 outputs.depth() / output()->outputs().depth());
+
 		trainer.init(inputs, outputs, this);
 		trainer.fit(epochs);
 		if (clean)

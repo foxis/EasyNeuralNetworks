@@ -75,7 +75,7 @@ public:
 	}
 
 	virtual void training_begin() {
-		this->gradients().resize(this->inputs().width(), this->inputs().height(), this->inputs().depth());
+		this->gradients().resize(this->inputs());
 	}
 	virtual void training_end() {
 		this->gradients().resize(0, 0, 0);
@@ -88,11 +88,11 @@ public:
 	/// errors are from previous layer for each output.
 	///  will calculate errors for the next layer
 	/// size of errors should be the same as number of output errors
-	virtual void backward(T_INPUT& deltas)
+	virtual void backward(T_INPUT& gradients)
 	{
 		// calculate gradients
-		this->_activation.apply_backward_inplace(deltas, this->outputs());
-		mat_mul<T, BIAS, T_SIZE, true>(this->gradients(), deltas, this->weights(), this->inputs().size(), this->outputs().size());
+		this->_activation.apply_backward_inplace(gradients, this->outputs());
+		mat_mul<T, BIAS, T_SIZE, true>(this->gradients(), gradients, this->weights(), this->inputs().size(), this->outputs().size());
 	}
 
 	///

@@ -30,12 +30,12 @@ public:
 	/// performs error back propagation.
 	/// will calculate errors for the inputs.
 	///
-	virtual void backward(T_INPUT& deltas) { }
+	virtual void backward(T_INPUT& gradients) { }
 
 	///
 	/// will update the weights calculated in backwards
 	///
-	virtual void update(const T_INPUT& deltas, T alpha) { }
+	virtual void update(const T_INPUT& gradients, T alpha) { }
 };
 
 };

@@ -3,6 +3,7 @@
 
 #include <stdlib.h>
 #include <math.h>
+#include <limits>
 
 #define ENN_BIAS (BIAS?1:0)
 
@@ -13,24 +14,189 @@ namespace EasyNeuralNetworks {
 ///
 ///
 template<typename T, typename T_SIZE>
-inline void diff_arr(T * dst, const T * a, const T * b, T_SIZE num) {
-	for (T_SIZE i = 0; i < num; i++) {
-		*dst = *a - *b;
-		++a;
+inline void hadamard_product(T * dst, const T * a, const T * b, T_SIZE num, T_SIZE stridea = 1, T_SIZE strideb = 1) {
+	while (num--) {
+		*dst = *a * *b;
+		a += stridea;
 		++dst;
-		++b;
+		b += strideb;
 	}
 }
 
 template<typename T, typename T_SIZE>
-inline void sqrdiff_arr(T * dst, const T * a, const T * b, T_SIZE num) {
+inline void diff_arr(T * dst, const T * a, const T * b, T_SIZE num, T_SIZE stridea = 1, T_SIZE strideb = 1) {
+	while (num--) {
+		*dst = *a - *b;
+		a += stridea;
+		++dst;
+		b += strideb;
+	}
+}
+
+template<typename T, typename T_SIZE>
+inline void sum_arr(T * dst, const T * a, const T * b, T_SIZE num, T_SIZE stridea = 1, T_SIZE strideb = 1) {
+	while (num--) {
+		*dst = *a + *b;
+		a += stridea;
+		++dst;
+		b += strideb;
+	}
+}
+
+template<typename T, typename T_SIZE>
+inline void sum_arr(T * dst, const T * src, T c, T_SIZE num, T_SIZE stride = 1) {
+	while (num--) {
+		*dst = *src + c;
+		src += stride;
+		++dst;
+	}
+}
+
+template<typename T, typename T_SIZE>
+inline void diff_arr(T * dst, const T * src, T c, T_SIZE num, T_SIZE stride = 1) {
+	while (num--) {
+		*dst = *src - c;
+		src += stride;
+		++dst;
+	}
+}
+
+template<typename T, typename T_SIZE>
+inline void mul_arr(T * dst, const T * src, T c, T_SIZE num, T_SIZE stride = 1) {
+	while (num--) {
+		*dst = *src * c;
+		src += stride;
+		++dst;
+	}
+}
+
+template<typename T, typename T_SIZE>
+inline void div_arr(T * dst, const T * src, T c, T_SIZE num, T_SIZE stride = 1) {
+	while (num--) {
+		*dst = *src / c;
+		src += stride;
+		++dst;
+	}
+}
+
+template<typename T, typename T_SIZE>
+inline void sum_arr_add(T * dst, const T * src, T c, T_SIZE num, T_SIZE stride = 1) {
+	while (num--) {
+		*dst += *src + c;
+		src += stride;
+		++dst;
+	}
+}
+
+template<typename T, typename T_SIZE>
+inline void diff_arr_add(T * dst, const T * src, T c, T_SIZE num, T_SIZE stride = 1) {
+	while (num--) {
+		*dst += *src - c;
+		src += stride;
+		++dst;
+	}
+}
+
+template<typename T, typename T_SIZE>
+inline void mul_arr_add(T * dst, const T * src, T c, T_SIZE num, T_SIZE stride = 1) {
+	while (num--) {
+		*dst += *src * c;
+		src += stride;
+		++dst;
+	}
+}
+
+template<typename T, typename T_SIZE>
+inline void div_arr_add(T * dst, const T * src, T c, T_SIZE num, T_SIZE stride = 1) {
+	while (num--) {
+		*dst += *src / c;
+		src += stride;
+		++dst;
+	}
+}
+
+template<typename T, typename T_SIZE>
+inline void sum_arr(T * dst, T c, T_SIZE num) {
+	while (num--) {
+		*dst += c;
+		++dst;
+	}
+}
+
+template<typename T, typename T_SIZE>
+inline void diff_arr(T * dst, T c, T_SIZE num) {
+	while (num--) {
+		*dst -= c;
+		++dst;
+	}
+}
+
+template<typename T, typename T_SIZE>
+inline void mul_arr(T * dst, T c, T_SIZE num) {
+	while (num--) {
+		*dst *= c;
+		++dst;
+	}
+}
+
+template<typename T, typename T_SIZE>
+inline void div_arr(T * dst, T c, T_SIZE num) {
+	while (num--) {
+		*dst /= c;
+		++dst;
+	}
+}
+
+template<typename T, typename T_SIZE>
+inline void diffsqr_arr(T * dst, const T * a, const T * b, T_SIZE num, T_SIZE stridea = 1, T_SIZE strideb = 1) {
 	T tmp;
-	for (T_SIZE i = 0; i < num; i++) {
+	while (num--) {
 		tmp = *a - *b
 		*dst = tmp * tmp;
-		++a;
+		a += stridea;
 		++dst;
-		++b;
+		b += strideb;
+	}
+}
+
+template<typename T, typename T_SIZE>
+inline void sumsqr_arr(T * dst, const T * a, const T * b, T_SIZE num, T_SIZE stridea = 1, T_SIZE strideb = 1) {
+	T tmp;
+	while (num--) {
+		tmp = *a + *b
+		*dst = tmp * tmp;
+		a += stridea;
+		++dst;
+		b += strideb;
+	}
+}
+
+template<typename T, typename T_SIZE>
+inline void sqrdiff_arr(T * dst, const T * a, const T * b, T_SIZE num, T_SIZE stridea = 1, T_SIZE strideb = 1) {
+	while (num--) {
+		*dst = *a **a - *b **b;
+		a += stridea;
+		++dst;
+		b += strideb;
+	}
+}
+
+template<typename T, typename T_SIZE>
+inline void sqrsum_arr(T * dst, const T * a, const T * b, T_SIZE num, T_SIZE stridea = 1, T_SIZE strideb = 1) {
+	while (num--) {
+		*dst = *a * *a + *b * *b;
+		a += stridea;
+		++dst;
+		b += strideb;
+	}
+}
+
+template<typename T, typename T_SIZE>
+inline void normalize_vec(T * dst, T_SIZE num, T_SIZE stride) {
+	T sum = sqrt(sqrsum_arr(dst, num, stride));
+	while (num--) {
+		*dst /= sum;
+		dst += stride;
 	}
 }
 
@@ -39,20 +205,9 @@ inline void sqrdiff_arr(T * dst, const T * a, const T * b, T_SIZE num) {
 ///
 ///
 template<typename T, typename T_SIZE>
-inline T dot_arr(const T * a, const T * b, T_SIZE num) {
+inline T dot_product(const T * a, const T * b, T_SIZE num, T_SIZE stridea = 1, T_SIZE strideb = 1) {
 	T acc = 0;
-	for (T_SIZE i = 0; i < num; i++) {
-		acc += *a * *b;
-		++a;
-		++b;
-	}
-	return acc;
-}
-
-template<typename T, typename T_SIZE>
-inline T dot_arr(const T * a, const T * b, T_SIZE num, T_SIZE stridea, T_SIZE strideb) {
-	T acc = 0;
-	for (T_SIZE i = 0; i < num; i++) {
+	while (num--) {
 		acc += *a * *b;
 		a += stridea;
 		b += strideb;
@@ -61,29 +216,9 @@ inline T dot_arr(const T * a, const T * b, T_SIZE num, T_SIZE stridea, T_SIZE st
 }
 
 template<typename T, typename T_SIZE>
-inline T sum_arr(const T * a, T_SIZE num) {
+inline T sum_arr(const T * a, T_SIZE num, T_SIZE stride = 1) {
 	T acc = 0;
-	for (T_SIZE i = 0; i < num; i++) {
-		acc += *a;
-		++a;
-	}
-	return acc;
-}
-
-template<typename T, typename T_SIZE>
-inline T sqrsum_arr(const T * a, T_SIZE num) {
-	T acc = 0;
-	for (T_SIZE i = 0; i < num; i++) {
-		acc += *a * *a;
-		++a;
-	}
-	return acc;
-}
-
-template<typename T, typename T_SIZE>
-inline T sum_arr(const T * a, T_SIZE num, T_SIZE stride) {
-	T acc = 0;
-	for (T_SIZE i = 0; i < num; i++) {
+	while (num--) {
 		acc += *a;
 		a += stride;
 	}
@@ -91,13 +226,84 @@ inline T sum_arr(const T * a, T_SIZE num, T_SIZE stride) {
 }
 
 template<typename T, typename T_SIZE>
-inline T sqrsum_arr(const T * a, T_SIZE num, T_SIZE stride) {
+inline T sqrsum_arr(const T * a, T_SIZE num, T_SIZE stride = 1) {
 	T acc = 0;
-	for (T_SIZE i = 0; i < num; i++) {
+	while (num--) {
 		acc += *a * *a;
 		a += stride;
 	}
 	return acc;
+}
+
+template<typename T, typename T_SIZE>
+inline T min_arr(const T * a, T_SIZE num, T_SIZE stride = 1) {
+	T acc = std::numeric_limits<T>::infinity();
+	while (num--) {
+		acc = min(acc, *a);
+		a += stride;
+	}
+	return acc;
+}
+
+template<typename T, typename T_SIZE>
+inline T max_arr(const T * a, T_SIZE num, T_SIZE stride = 1) {
+	T acc = -std::numeric_limits<T>::infinity();
+	while (num--) {
+		acc = max(acc, *a);
+		a += stride;
+	}
+	return acc;
+}
+
+template<typename T, typename T_SIZE>
+inline T mean_arr(const T * a, T_SIZE num, T_SIZE stride = 1) {
+	return sum_arr(a, num, stride) / (T)num;
+}
+
+template<typename T, typename T_SIZE>
+inline void moments_arr(T * mean, T * stddev, const T * a, T_SIZE num, T_SIZE stride = 1) {
+	if (num < 2)
+		return ;
+
+	T K = a[0];
+	T n = num;
+	T Ex = 0;
+	T Ex2 = 0.0;
+	T tmp;
+
+	while (num--) {
+		tmp = *a - K;
+		Ex += tmp;
+		Ex2 += tmp * tmp;
+		a += stride;
+	}
+	*mean = K + Ex / n;
+	*stddev = (Ex2 - (Ex * Ex) / n) / n;
+}
+
+///
+/// weighted moments
+///
+template<typename T, typename T_SIZE>
+inline void moments_arr(T * mean, T * stddev, const T * a, const T * w, T_SIZE num, T_SIZE stride = 1) {
+	if (num < 2)
+		return ;
+
+	T K = *a * *w;
+	T n = num;
+	T Ex = 0;
+	T Ex2 = 0.0;
+	T tmp;
+
+	while (num--) {
+		tmp = *a * *w - K;
+		Ex += tmp;
+		Ex2 += tmp * tmp;
+		a += stride;
+		w += stride;
+	}
+	*mean = K + Ex / n;
+	*stddev = (Ex2 - (Ex * Ex) / n) / n;
 }
 
 /// ==========================================
@@ -107,7 +313,7 @@ inline T sqrsum_arr(const T * a, T_SIZE num, T_SIZE stride) {
 template<typename T, bool BIAS, typename T_SIZE, bool TRANSPOSED>
 inline void mat_mul(T * dst, const T * vec, const T * mat, T_SIZE N, T_SIZE M) {
 	// vector is N
-	// matrix is (N+BIAS)xM
+	// matrix is NxM
 	// destination is M
 	// MATij = mat[i + j * (N + BIAS)]
 	T acc;
@@ -215,7 +421,7 @@ inline void outer_product_add_const(T * dst, const T * u, const T * v, T_SIZE N,
 }
 
 template<typename T, bool BIAS, typename T_SIZE, bool TRANSPOSED>
-inline void convolve_1d(T * dst, const T * vec, const T * kernel, T_SIZE N, T_SIZE M, T_SIZE stride) {
+inline void convolve_1d_add(T * dst, const T * vec, const T * kernel, T_SIZE N, T_SIZE M, T_SIZE stride) {
 	// vector is N
 	// kernel is M
 	if (!TRANSPOSED) {
@@ -224,10 +430,10 @@ inline void convolve_1d(T * dst, const T * vec, const T * kernel, T_SIZE N, T_SI
 		const T_SIZE dst_size = (N - M) / stride + 1;
 
 		for (j = 0; j < dst_size; j++) {
-			*dst = dot_arr<T, T_SIZE>(vec, kernel, M);
-			vec += stride;
+			*dst += dot_product<T, T_SIZE>(vec, kernel, M);
 			if (BIAS)
 				*dst += kernel[M];
+			vec += stride;
 			++dst;
 		}
 	} else {
@@ -246,7 +452,7 @@ inline void convolve_1d(T * dst, const T * vec, const T * kernel, T_SIZE N, T_SI
 }
 
 template<typename T, bool BIAS, typename T_SIZE, bool TRANSPOSED>
-inline void convolve_2d(T * dst, const T * mat, const T * kernel, T_SIZE N, T_SIZE M, T_SIZE K, T_SIZE L, T_SIZE stride) {
+inline void convolve_2d_add(T * dst, const T * mat, const T * kernel, T_SIZE N, T_SIZE M, T_SIZE K, T_SIZE L, T_SIZE stride) {
 	// matrix is NxM
 	// kernel is KxL
 	//
@@ -261,7 +467,7 @@ inline void convolve_2d(T * dst, const T * mat, const T * kernel, T_SIZE N, T_SI
 		for (b = 0; b < MLS; b++) {
 			p = mat + (b * stride) * N;
 			for (a = 0; a < NKS; a++) {
-				*dst = dot_arr<T, BIAS, T_SIZE>(p, kernel, K * L, N, 1);
+				*dst += dot_product<T, T_SIZE>(p, kernel, KL, N, 1);
 				p += stride;
 				if (BIAS)
 					*dst += kernel[KL];
@@ -269,7 +475,7 @@ inline void convolve_2d(T * dst, const T * mat, const T * kernel, T_SIZE N, T_SI
 			}
 		}
 	} else {
-		
+
 	}
 }
 

@@ -24,7 +24,7 @@ private:
 	ENN_T_LAYER_TYPEDEF(T_LAYER);
 	ENN_T_LOSS_TYPEDEF(T_LOSS);
 
-	T_INPUT *delta_out;
+	T_INPUT *out_gradients;
 	T mean_error;
 	T momentum;
 	T decay;
@@ -48,10 +48,10 @@ public:
 		this->callback_data = callback_data;
 	}
 
-	virtual void init(const tensor<float, T_SIZE> &inputs, const tensor<float, T_SIZE> &outputs, NeuralNetwork<T, T_SIZE>* network) override {
+	virtual void init(const T_INPUT &inputs, const T_INPUT &outputs, NeuralNetwork<T, T_SIZE>* network) override {
 		TrainerBase<T, T_SIZE>::init(inputs, outputs, network);
 
-		delta_out = new T_INPUT(this->num_outputs);
+		out_gradients = this->last->outputs().clone_new(false);
 
 		for (auto L : this->layers) {
 			L->training_begin();
@@ -82,7 +82,7 @@ public:
 	}
 
 	virtual void clean() {
-		delete delta_out;
+		delete out_gradients;
 
 		for (auto L : this->layers)
 			L->training_end();
@@ -103,45 +103,34 @@ public:
 
 	void fit_epoch() {
 		typename std::vector<T_LAYER*>::reverse_iterator L;
-		T_LAYER *prev = NULL;
 		T_INPUT *gradients;
 
 		mean_error = 0;
 
 		for (T_SIZE input_output_pair = 0; input_output_pair < this->inputs.depth(); input_output_pair++) {
 			// evaluate input/output pair
-			this->first->inputs().copy(this->inputs.window(input_output_pair));
+			this->first->inputs().copy(this->inputs.window(input_output_pair * this->first->inputs().depth(), this->first->inputs().depth()));
 
 			this->network->calculate();
 
 			// calculate output error
-			mean_error += loss_func(*delta_out, this->outputs.window(input_output_pair), this->last->outputs());
+			mean_error += loss_func(*out_gradients, this->outputs.window(input_output_pair * this->last->outputs().depth(), this->last->outputs().depth()), this->last->outputs());
 
 			// backpropagate
-			prev = NULL;
 			L = this->layers.rbegin();
+			gradients = out_gradients;
 			while (L != this->layers.rend()) {
-				if (prev == NULL) {
-					gradients = delta_out;
-				} else {
-					gradients = &prev->gradients();
-				}
 				(*L)->backward(*gradients);
-				prev = *L;
+				gradients = &(*L)->gradients();
 				++L;
 			}
 
 			// update weights
-			prev = NULL;
 			L = this->layers.rbegin();
+			gradients = out_gradients;
 			while (L != this->layers.rend()) {
-				if (prev == NULL) {
-					gradients = delta_out;
-				} else {
-					gradients = &prev->gradients();
-				}
 				(*L)->update(*gradients, current_momentum);
-				prev = *L;
+				gradients = &(*L)->gradients();
 				++L;
 			}
 		}

@@ -57,7 +57,7 @@ void loop() {
 	TYPE * p = inputs;
 
 	for (int i = 0; i < 4; i++) {
-		input.inputs().copy(input_tensor.window(i));
+		input.inputs().copy(input_tensor.window(i, 1));
 		nn.calculate();
 		o[i] = output.outputs()[0];
 		p += 2;

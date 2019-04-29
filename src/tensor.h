@@ -123,8 +123,15 @@ public:
 	}
 
 	// access stuff
-	inline T * data() { return _data; }
+	inline T* data() { return _data; }
+	inline T* data(T_SIZE z) { return _data + offset(z); }
+	inline T* data(T_SIZE y, T_SIZE z) { return _data + offset(y, z); }
+	inline T* data(T_SIZE x, T_SIZE y, T_SIZE z) { return _data + offset(x, y, z); }
+
 	inline const T* data() const { return _data; }
+	inline const T* data(T_SIZE z) const { return _data + offset(z); }
+	inline const T* data(T_SIZE y, T_SIZE z) const { return _data + offset(y, z); }
+	inline const T* data(T_SIZE x, T_SIZE y, T_SIZE z) const { return _data + offset(x, y, z); }
 
 	inline operator T * () { return _data; }
 	inline operator const T* () const { return _data; }
@@ -138,40 +145,39 @@ public:
 	inline T_SIZE depth() const { return _depth; }
 	inline T_SIZE size() const { return _width * _height * _depth; }
 
-	inline T_SIZE offset(T_SIZE x, T_SIZE y, T_SIZE z) const { return x + y * _width + z * _width * _height; }
+	inline T_SIZE offset(T_SIZE x, T_SIZE y, T_SIZE z) const { return x + (y + z * _height) * _width; }
+	inline T_SIZE offset(T_SIZE y, T_SIZE z) const { return (y + z * _height) * _width; }
+	inline T_SIZE offset(T_SIZE z) const { return z * _width * _height; }
 
 	// iterator stuff
 	inline iterator begin(T_SIZE stride) { return iterator(_data, stride); }
 	inline iterator end(T_SIZE stride) { return begin(stride) + size(); }
 
-	inline iterator begin(T_SIZE y, T_SIZE z, T_SIZE stride) { return iterator(data + y * _width + z * _width * _height, stride); }
+	inline iterator begin(T_SIZE y, T_SIZE z, T_SIZE stride) { return iterator(data(y, z), stride); }
 	inline iterator end(T_SIZE y, T_SIZE z, T_SIZE stride) { return begin(y, z, stride) + _width; }
 
-	inline iterator begin(T_SIZE z, T_SIZE stride) { return iterator(_data, _width * _height * z, stride); }
-	inline iterator end(T_SIZE z, T_SIZE stride) { return end(z, stride) + _width * _height; }
+	inline iterator begin(T_SIZE z, T_SIZE stride) { return iterator(data(z), stride); }
+	inline iterator end(T_SIZE z, T_SIZE stride) { return begin(z, stride) + _width * _height; }
 
 	inline range iter(T_SIZE stride) { return range(_data, stride, _width * _height * _depth); }
-	inline range iter(T_SIZE y, T_SIZE z, T_SIZE stride) { return range(_data + y * _width + z * _width * _height, stride, _width); }
-	inline range iter(T_SIZE z, T_SIZE stride) { return range(_data + z * _width * _height, stride, _width * _height); }
+	inline range iter(T_SIZE y, T_SIZE z, T_SIZE stride) { return range(data(y, z), stride, _width); }
+	inline range iter(T_SIZE z, T_SIZE stride) { return range(data(z), stride, _width * _height); }
 
 	inline const_iterator begin(T_SIZE stride) const { return const_iterator(_data, stride); }
 	inline const_iterator end(T_SIZE stride) const { return begin(stride) + size(); }
 
-	inline const_iterator begin(T_SIZE y, T_SIZE z, T_SIZE stride) const { return const_iterator(_data + y * _width + z * _width * _height, stride); }
+	inline const_iterator begin(T_SIZE y, T_SIZE z, T_SIZE stride) const { return const_iterator(data(y, z), stride); }
 	inline const_iterator end(T_SIZE y, T_SIZE z, T_SIZE stride) const { return begin(y, z, stride) + _width; }
 
-	inline const_iterator begin(T_SIZE z, T_SIZE stride) const { return const_iterator(_data, _width * _height * z, stride); }
-	inline const_iterator end(T_SIZE z, T_SIZE stride) const { return end(z, stride) + _width * _height; }
+	inline const_iterator begin(T_SIZE z, T_SIZE stride) const { return const_iterator(data(z), stride); }
+	inline const_iterator end(T_SIZE z, T_SIZE stride) const { return begin(z, stride) + _width * _height; }
 
 	inline const_range iter(T_SIZE stride) const { return const_range(_data, stride, size()); }
-	inline const_range iter(T_SIZE y, T_SIZE z, T_SIZE stride) const { return const_range(_data + y * _width + z * _width * _height, stride, _width); }
-	inline const_range iter(T_SIZE z, T_SIZE stride) const { return const_range(_data + z * _width * _height, stride, _width * _height); }
+	inline const_range iter(T_SIZE y, T_SIZE z, T_SIZE stride) const { return const_range(data(y, z), stride, _width); }
+	inline const_range iter(T_SIZE z, T_SIZE stride) const { return const_range(data(z), stride, _width * _height); }
 
-	inline tensor<T, T_SIZE> window(T_SIZE z) { return tensor<T, T_SIZE>(_data + z * _width * _height, _width, _height, 1); }
-	inline tensor<T, T_SIZE> window(T_SIZE y, T_SIZE z) { return tensor<T, T_SIZE>(_data + y * _width + z * _width * _height, _width, 1, 1); }
-
-	inline tensor<T, T_SIZE> window(T_SIZE z) const { return tensor<T, T_SIZE>(_data + z * _width * _height, _width, _height, 1); }
-	inline tensor<T, T_SIZE> window(T_SIZE y, T_SIZE z) const { return tensor<T, T_SIZE>(_data + y * _width + z * _width * _height, _width, 1, 1); }
+	inline tensor<T, T_SIZE> window(T_SIZE z, T_SIZE depth) { return tensor<T, T_SIZE>(data(z), _width, _height, depth); }
+	inline tensor<T, T_SIZE> window(T_SIZE z, T_SIZE depth) const { return tensor<T, T_SIZE>(data(z), _width, _height, depth); }
 
 	inline bool owns() const { return _needs_free; }
 	inline void owns(bool val) { _needs_free = val; }
@@ -193,46 +199,59 @@ public:
 			Serial.println("created new");
 		}
 	}
+	inline void resize(const tensor<T, T_SIZE>& src) {
+		resize(src.width(), src.height(), src.depth());
+	}
 
-	inline tensor<T, T_SIZE> clone(bool copy=false) {
-		tensor<T, T_SIZE> tmp(_width, _height, _depth);
+	inline tensor<T, T_SIZE> clone(bool copy=true) const {
+		tensor<T, T_SIZE> tmp(width(), height(), depth());
 		if (copy)
-			tmp->copy<true>(*this);
+			tmp.copy(*this);
 		tmp.owns(false);
 		return tmp;
 	}
+
+	inline tensor<T, T_SIZE>* clone_new(bool copy=true) const {
+		tensor<T, T_SIZE> *tmp = new tensor<T, T_SIZE>(width(), height(), depth());
+		if (copy)
+			tmp->copy(*this);
+		return tmp;
+	}
+
 	inline void fill(T val) {
-		for (auto &p : iter())
-			p = val;
+		auto N = size();
+		auto p = data();
+		if (val == 0) {
+			memset(p, sizeof(T) * N, 0);
+			return;
+		}
+		while (N--)
+			*(p++) = val;
 	}
 	inline void map(std::function<T (T_SIZE idx, T val, void * params)> setter, void * params = NULL) {
-		T_SIZE i = 0;
-		for (auto &p : iter())
-			p = setter(i++, p, params);
+		auto N = size();
+		auto p = data();
+		for (T_SIZE i = 0; i < N; i++) {
+			*p = setter(i++, *p, params);
+			++p;
+		}
 	}
 
 	inline void copy(const T * src, T_SIZE stride=1) {
-		memcpy(_data, src, sizeof(T) * size());
+		memcpy(data(), src, sizeof(T) * size());
 	}
 
-	template<bool RAW>
 	inline void copy(const tensor<T, T_SIZE>& src, T_SIZE stride=1) {
 		assert(size() == src.size());
 
-		if (RAW) {
-			copy(src._data, stride);
-		}
-		else {
-			auto S = src.begin(stride);
-			auto D = begin(stride);
-			auto Se = src.end(stride);
-			auto De = end(stride);
-			while (S != Se && D != De) {
-				*D = *S;
-				++D;
-				++S;
-			}
-		}
+		copy(src.data(), stride);
+	}
+
+	inline void copy_from(const tensor<T, T_SIZE>& src, T_SIZE z_offset) {
+		assert(width() == src.width() && height() == src.height());
+		assert((depth() + z_offset) <= src.depth());
+
+		copy(src.data(z_offset));
 	}
 };
 
