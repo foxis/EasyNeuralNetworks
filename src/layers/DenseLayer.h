@@ -1,9 +1,9 @@
 #if !defined(ENN_DENSE_LAYER_H)
 #define ENN_DENSE_LAYER_H
 
-#include <LayerBase.h>
-#include <ProgmemHelper.h>
-#include <matvecop.h>
+#include <core/LayerBase.h>
+#include <core/ProgmemHelper.h>
+#include <core/matvecop.h>
 
 namespace EasyNeuralNetworks {
 

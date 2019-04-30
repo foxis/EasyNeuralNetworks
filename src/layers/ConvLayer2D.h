@@ -1,7 +1,7 @@
 #if !defined(ENN_CONV_LAYER_2D_H)
 #define ENN_CONV_LAYER_2D_H
 
-#include <LayerBase.h>
+#include <core/LayerBase.h>
 
 namespace EasyNeuralNetworks {
 
@@ -85,7 +85,7 @@ public:
 	}
 
 	///
-	/// 
+	///
 	///
 	virtual void update(const T_INPUT& gradients, T alpha)
 	{

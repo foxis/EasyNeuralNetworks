@@ -2,7 +2,7 @@
 #define ENN_BACKPROP_TRAINER_H
 
 #include <NeuralNetwork.h>
-#include <matvecop.h>
+#include <core/matvecop.h>
 
 namespace EasyNeuralNetworks {
 

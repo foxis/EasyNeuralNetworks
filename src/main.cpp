@@ -1,6 +1,5 @@
 #include <Arduino.h>
 #include <NeuralNetwork.h>
-#include <BackPropTrainer.h>
 using namespace EasyNeuralNetworks;
 
 //#define TYPE FixedPointType<int32_t, 16>

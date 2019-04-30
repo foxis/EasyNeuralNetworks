@@ -9,7 +9,7 @@
 #define ENN_DEFAULT_BIAS true
 #endif
 
-#include <tensor.h>
+#include <core/tensor.h>
 
 namespace EasyNeuralNetworks {
 

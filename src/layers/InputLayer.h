@@ -1,8 +1,9 @@
 #if !defined(ENN_INPUT_LAYER_H)
 #define ENN_INPUT_LAYER_H
 
-#include <LayerBase.h>
-#include <LUActivation.h>
+#include <core/LayerBase.h>
+#include <activations/LUActivation.h>
+
 
 namespace EasyNeuralNetworks {
 

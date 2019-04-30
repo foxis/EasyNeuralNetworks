@@ -1,8 +1,9 @@
 #if !defined(ENN_DROPOUT_LAYER_2D_H)
 #define ENN_DROPOUT_LAYER_2D_H
 
-#include <LayerBase.h>
-#include <LUActivation.h>
+#include <core/LayerBase.h>
+#include <activations/LUActivation.h>
+
 #include <stdlib.h>
 
 namespace EasyNeuralNetworks {

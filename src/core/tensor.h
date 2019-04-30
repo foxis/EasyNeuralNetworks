@@ -13,7 +13,7 @@
 #define ENN_DEFAULT_SIZE_TYPE uint16_t
 #endif
 
-#include <ProgmemHelper.h>
+#include <core/ProgmemHelper.h>
 
 namespace EasyNeuralNetworks {
 
@@ -185,7 +185,6 @@ public:
 	inline void resize(T_SIZE width, T_SIZE height, T_SIZE depth) {
 		if (_data != NULL && _needs_free) {
 			delete[] _data;
-			Serial.println("deleted");
 		}
 		if (width == 0 || height == 0 || depth == 0) {
 			_width = _height = _depth = 0;
@@ -196,7 +195,6 @@ public:
 			_depth = depth;
 			_data = new T[width * height * depth];
 			_needs_free = true;
-			Serial.println("created new");
 		}
 	}
 	inline void resize(const tensor<T, T_SIZE>& src) {

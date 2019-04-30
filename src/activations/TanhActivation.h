@@ -1,7 +1,7 @@
 #if !defined(ENN_TANH_ACTIVATION_H)
 #define ENN_TANH_ACTIVATION_H
 
-#include <LayerBase.h>
+#include <core/LayerBase.h>
 #include <math.h>
 
 namespace EasyNeuralNetworks {

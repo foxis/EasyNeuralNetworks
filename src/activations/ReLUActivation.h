@@ -1,7 +1,7 @@
 #if !defined(ENN_RELU_ACTIVATION_H)
 #define ENN_RELU_ACTIVATION_H
 
-#include <LayerBase.h>
+#include <core/LayerBase.h>
 
 namespace EasyNeuralNetworks {
 

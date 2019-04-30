@@ -1,26 +1,25 @@
 #if !defined(ENN_NEURAL_NETWORK_H)
 #define ENN_NEURAL_NETWORK_H
 
-#include <LayerBase.h>
+#include <activations/LUActivation.h>
+#include <activations/ReLUActivation.h>
+#include <activations/SigmoidActivation.h>
+#include <activations/TanhActivation.h>
+#include <activations/SoftplusActivation.h>
+#include <layers/InputLayer.h>
+#include <layers/DenseLayer.h>
+#include <layers/DropOutLayer.h>
+#include <layers/DropOutLayer1D.h>
+#include <layers/DropOutLayer2D.h>
+#include <layers/ConvLayer1D.h>
+#include <layers/ConvLayer2D.h>
+#include <layers/MaxPoolingLayer1D.h>
+#include <layers/MaxPoolingLayer2D.h>
+
+#include <core/FixedPointType.h>
 #include <cstdarg>
 #include <vector>
 #include <stdlib.h>
-
-#include <LUActivation.h>
-#include <ReLUActivation.h>
-#include <SigmoidActivation.h>
-#include <TanhActivation.h>
-#include <SoftplusActivation.h>
-#include <InputLayer.h>
-#include <DenseLayer.h>
-#include <DropOutLayer.h>
-#include <DropOutLayer1D.h>
-#include <DropOutLayer2D.h>
-#include <ConvLayer1D.h>
-#include <ConvLayer2D.h>
-#include <MaxPoolingLayer1D.h>
-#include <MaxPoolingLayer2D.h>
-#include <FixedPointType.h>
 
 namespace EasyNeuralNetworks {
 
@@ -161,5 +160,7 @@ public:
 };
 
 };
+
+#include <trainers/BackPropTrainer.h>
 
 #endif
