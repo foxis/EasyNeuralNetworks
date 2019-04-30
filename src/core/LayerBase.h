@@ -19,8 +19,8 @@ public:
 	virtual T forward(T val) const = 0;
 	virtual T backward(T val) const = 0;
 
-	inline void apply_forward_inplace(tensor<T, T_SIZE>& a) const {
-		auto I = a.begin(1);
+	virtual void apply_forward_inplace(tensor<T, T_SIZE>& a) const {
+		auto I = a.data();
 		auto num = a.size();
 
 		while (num--) {
@@ -29,15 +29,15 @@ public:
 		}
 	}
 
-	inline void apply_backward_inplace(tensor<T, T_SIZE>& deltas, const tensor<T, T_SIZE>& outputs) const {
+	virtual void apply_backward_inplace(tensor<T, T_SIZE>& deltas, const tensor<T, T_SIZE>& outputs) const {
 		assert(deltas.size() == outputs.size());
-		auto D = deltas.begin(1);
-		auto O = outputs.begin(1);
+		auto D = deltas.data();
+		auto O = outputs.data();
 		auto num = outputs.size();
 		while (num--) {
 			*D = *D * backward(*O);
-			++D;
 			++O;
+			++D;
 		}
 	}
 };

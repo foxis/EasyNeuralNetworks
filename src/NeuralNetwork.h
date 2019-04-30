@@ -6,6 +6,7 @@
 #include <activations/SigmoidActivation.h>
 #include <activations/TanhActivation.h>
 #include <activations/SoftplusActivation.h>
+#include <activations/SoftmaxActivation.h>
 #include <layers/InputLayer.h>
 #include <layers/DenseLayer.h>
 #include <layers/DropOutLayer.h>
@@ -34,9 +35,9 @@ public:
 		T acc = 0;	\
 		assert(deltas.size() == target.size() && deltas.size() == output.size()); \
 		auto num = output.size(); \
-		auto D = deltas.begin(1); \
-		auto Ta = target.begin(1); \
-		auto O = output.begin(1); \
+		auto D = deltas.data(); \
+		auto Ta = target.data(); \
+		auto O = output.data(); \
 		while (num--) {	\
 			*D = DELTA;	\
 			acc += ACC;	\
@@ -67,7 +68,7 @@ template<typename T, typename T_SIZE = ENN_DEFAULT_SIZE_TYPE>
 class CrossEntropy : public LossFunctionBase<T, T_SIZE> {
 public:
 	virtual T operator () (tensor<T, T_SIZE>& deltas, const tensor<T, T_SIZE>& target, const tensor<T, T_SIZE>& output) const {
-		ENN_LOSS_LOOP(*Ta * log(*O), -*D)
+		ENN_LOSS_LOOP(-*Ta * log(*O), -*D)
 	}
 };
 
