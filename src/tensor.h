@@ -239,6 +239,29 @@ public:
 		while (N--)
 			*(p++) = val;
 	}
+
+	inline void fill(T_SIZE z, T val) {
+		auto N = width() * height();
+		auto p = data(z);
+		if (val == 0) {
+			memset(p, sizeof(T) * N, 0);
+			return;
+		}
+		while (N--)
+			*(p++) = val;
+	}
+
+	inline void fill(T_SIZE y, T_SIZE z, T val) {
+		auto N = width();
+		auto p = data(y, z);
+		if (val == 0) {
+			memset(p, sizeof(T) * N, 0);
+			return;
+		}
+		while (N--)
+			*(p++) = val;
+	}
+
 	inline void map(std::function<T (T_SIZE idx, T val, void * params)> setter, void * params = NULL) {
 		auto N = size();
 		auto p = data();

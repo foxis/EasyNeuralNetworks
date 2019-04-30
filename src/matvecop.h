@@ -204,6 +204,8 @@ inline void normalize_vec(T * dst, T_SIZE num, T_SIZE stride) {
 /// Accumulation methods
 ///
 ///
+
+// dot product of two vectors
 template<typename T, typename T_SIZE>
 inline T dot_product(const T * a, const T * b, T_SIZE num, T_SIZE stridea = 1, T_SIZE strideb = 1) {
 	T acc = 0;
@@ -212,6 +214,22 @@ inline T dot_product(const T * a, const T * b, T_SIZE num, T_SIZE stridea = 1, T
 		a += stridea;
 		b += strideb;
 	}
+	return acc;
+}
+
+// dot product of KxL sumatrix of a and b of KxL
+template<typename T, typename T_SIZE>
+inline T dot_product_2d(const T * a, const T * b, T_SIZE N, T_SIZE M, T_SIZE K, T_SIZE L) {
+	// a is NxM
+	// b is KxL
+	T acc = 0;
+	T_SIZE num = K * L;
+	for (T_SIZE j = 0; j < L; j++) {
+		acc += dot_product(a, b, K);
+		a += N;
+		b += K;
+	}
+
 	return acc;
 }
 
@@ -236,22 +254,80 @@ inline T sqrsum_arr(const T * a, T_SIZE num, T_SIZE stride = 1) {
 }
 
 template<typename T, typename T_SIZE>
-inline T min_arr(const T * a, T_SIZE num, T_SIZE stride = 1) {
+inline T min_arr(T_SIZE * index, const T * a, T_SIZE num, T_SIZE stride = 1) {
 	T acc = std::numeric_limits<T>::infinity();
-	while (num--) {
-		acc = min(acc, *a);
+	T_SIZE idx = 0;
+	for (T_SIZE i = 0; i < num; i++) {
+		auto tmp = *a;
+		if (tmp < acc) {
+			acc = tmp;
+			idx = i;
+		}
 		a += stride;
 	}
+	if (index != NULL)
+		*index = idx;
 	return acc;
 }
 
 template<typename T, typename T_SIZE>
-inline T max_arr(const T * a, T_SIZE num, T_SIZE stride = 1) {
+inline T max_arr(T_SIZE * index, const T * a, T_SIZE num, T_SIZE stride = 1) {
 	T acc = -std::numeric_limits<T>::infinity();
-	while (num--) {
-		acc = max(acc, *a);
+	T_SIZE idx = 0;
+	for (T_SIZE i = 0; i < num; i++) {
+		auto tmp = *a;
+		if (tmp > acc) {
+			acc = tmp;
+			idx = i;
+		}
 		a += stride;
 	}
+	if (index != NULL)
+		*index = idx;
+	return acc;
+}
+
+template<typename T, typename T_SIZE>
+inline T min_mat(T_SIZE * index_x, T_SIZE index_y, const T * a, T_SIZE in_width, T_SIZE width, T_SIZE height, T_SIZE stride = 1) {
+	T acc = std::numeric_limits<T>::infinity();
+	T_SIZE x = 0, y = 0;
+	for (T_SIZE i = 0; i < height; i++) {
+		T * p = *a;
+		for (T_SIZE j = 0; j < width; j++) {
+			auto tmp = *p;
+			if (tmp < acc) {
+				acc = tmp;
+				x = j;
+				y = i;
+			}
+			p += stride;
+		}
+		a += in_width;
+	}
+	*index_x = x;
+	*index_y = y;
+	return acc;
+}
+
+template<typename T, typename T_SIZE>
+inline T max_mat(T_SIZE * index_x, T_SIZE index_y, const T * a, T_SIZE in_width, T_SIZE width, T_SIZE height, T_SIZE stride = 1) {
+	T acc = -std::numeric_limits<T>::infinity();
+	T_SIZE x = 0, y = 0;
+	for (T_SIZE i = 0; i < height; i++) {
+		T * p = *a;
+		for (T_SIZE j = 0; j < width; j++) {
+			auto tmp = *p;
+			if (tmp > acc) {
+				acc = tmp;
+				x = j;
+				y = i;
+			}
+			p += stride;
+		}
+		a += in_width;
+	}
+	*index_x = x;
+	*index_y = y;
 	return acc;
 }
 
@@ -426,7 +502,7 @@ inline void convolve_1d_add(T * dst, const T * vec, const T * kernel, T_SIZE N, 
 	// kernel is M
 	T_SIZE j, i;
 	if (!TRANSPOSED) {
-		// DSTj = SUMi VEC[i+j] * KERNEL[i]
+		// DSTj = SUMi VEC[i + j * stride] * KERNEL[i]
 		const T_SIZE dst_size = (N - M) / stride + 1;
 
 		for (i = 0; i < dst_size; i++) {
@@ -435,7 +511,7 @@ inline void convolve_1d_add(T * dst, const T * vec, const T * kernel, T_SIZE N, 
 			++dst;
 		}
 	} else {
-		// DSTj = SUMi VEC[i + j * ] * KERNEL[i]
+		// DSTj = SUMi VEC[i - K + 1 + j * stride] * KERNEL[K-i-1]
 		for (i = 0; i < N; i++) {
 			T * d = dst + i * stride;
 			const T * w = kernel;
@@ -464,16 +540,10 @@ inline void convolve_2d_add(T * dst, const T * mat, const T * kernel, T_SIZE N, 
 		const T_SIZE NKS = (N - K) / stride + 1;
 
 		for (b = 0; b < MLS; b++) {
+			p = mat + (b * stride) * N;
 			for (a = 0; a < NKS; a++) {
-				acc = 0;
-				k = kernel;
-				p = mat + a + (b * stride) * N;
-				for (j = 0; j < L; j++) {
-					acc += dot_product<T, T_SIZE>(p, k, K);
-					p += stride;
-					k + K;
-				}
-				*dst += acc;
+				*dst += dot_product_2d<T, T_SIZE>(p, kernel, N, M, K, L);
+				p += N;
 				++dst;
 			}
 		}

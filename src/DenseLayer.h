@@ -60,14 +60,8 @@ public:
 	}
 
 	///
-	/// performs a forward calculation
-	/// outputs() will write the result in output data
 	///
-	/// will calculate the output for fully connected NN
 	///
-	/// Oj = SUMi Ii * Wij
-	///
-	///  Wij = W_arr(i + j * N)
 	virtual void forward()
 	{
 		mat_mul<T, BIAS, T_SIZE, false>(this->outputs(), this->inputs(), this->weights(), this->inputs().size(), this->outputs().size());
@@ -82,12 +76,8 @@ public:
 	}
 
 	///
-	/// performs error back propagation.
-	/// will calculate errors for the inputs.
 	///
-	/// errors are from previous layer for each output.
-	///  will calculate errors for the next layer
-	/// size of errors should be the same as number of output errors
+	///
 	virtual void backward(T_INPUT& gradients)
 	{
 		// calculate gradients
@@ -96,13 +86,12 @@ public:
 	}
 
 	///
-	/// will update the weights calculated in backward
+	///
 	///
 	virtual void update(const T_INPUT& gradients, T alpha)
 	{
 		outer_product_add_const<T, BIAS, T_SIZE>(this->weights(), gradients, this->inputs(), this->outputs().size(), this->inputs().size(), -alpha);
 	}
-
 };
 
 };

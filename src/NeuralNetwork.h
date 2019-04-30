@@ -14,10 +14,12 @@
 #include <InputLayer.h>
 #include <DenseLayer.h>
 #include <DropOutLayer.h>
+#include <DropOutLayer1D.h>
+#include <DropOutLayer2D.h>
 #include <ConvLayer1D.h>
 #include <ConvLayer2D.h>
-//#include <PoolingLayer1D.h>
-//#include <PoolingLayer2D.h>
+#include <MaxPoolingLayer1D.h>
+#include <MaxPoolingLayer2D.h>
 #include <FixedPointType.h>
 
 namespace EasyNeuralNetworks {

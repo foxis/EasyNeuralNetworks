@@ -108,7 +108,7 @@ public:
 	}
 
 	///
-	/// will update the weights calculated in backwards
+	/// 
 	///
 	virtual void update(const T_INPUT& gradients, T alpha)
 	{

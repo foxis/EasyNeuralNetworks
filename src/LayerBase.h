@@ -60,6 +60,7 @@ protected:
 	T_INPUT _weights;
 	T_INPUT _gradients;
 	const T_ACTIVATION& _activation;
+	bool _trainable = true;
 public:
 	LayerBase(const T_ACTIVATION& activation) : _activation(activation) {	}
 
@@ -80,6 +81,9 @@ public:
 	///
 	inline const T_ACTIVATION& activation() const { return _activation; }
 	inline void activation(T_ACTIVATION& act) const { _activation = act; }
+
+	inline bool trainable() const { return _trainable; }
+	inline void trainable(bool trainable) { _trainable = trainable; }
 
 	///
 	/// gradients calculated for the inputs

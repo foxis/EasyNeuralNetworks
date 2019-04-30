@@ -39,17 +39,8 @@ public:
 	}
 
 	///
-	/// performs a forward calculation
-	/// outputs() will write the result in output data
 	///
-	/// will calculate the output for 1d convolution NN
-	///  kernel weight: i < kernel_size
-	///  kernel:        j < num_kernels
-	///	 kernel in pos: t < num_inputs - kernel_size
 	///
-	/// Otj = SUMi I(i+t) * Wij
-	///
-	///  Wkj = W_arr(k + j * kernel_size)
 	virtual void forward()
 	{
 		this->outputs().fill(0);
@@ -75,12 +66,8 @@ public:
 	}
 
 	///
-	/// performs error back propagation.
-	/// will calculate errors for the inputs.
 	///
-	/// errors are from previous layer for each output.
-	///  will calculate errors for the next layer
-	/// size of errors should be the same as number of output errors
+	///
 	virtual void backward(T_INPUT& gradients)
 	{
 		// apply activation derivative
@@ -98,7 +85,7 @@ public:
 	}
 
 	///
-	/// will update the weights calculated in backwards
+	/// 
 	///
 	virtual void update(const T_INPUT& gradients, T alpha)
 	{
