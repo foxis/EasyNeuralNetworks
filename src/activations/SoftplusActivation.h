@@ -17,7 +17,8 @@ public:
 
 	inline virtual T backward(T val) const
 	{
-		return 1.0 / (1.0 + exp(-(double)val / ln1));
+		double response = log(exp((double)val) - 1);
+		return 1 / (1 + exp(-response));
 	}
 };
 

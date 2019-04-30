@@ -16,9 +16,16 @@ namespace EasyNeuralNetworks {
 template<typename T, typename T_SIZE>
 class ActivationBase {
 public:
-	virtual T forward(T val) const = 0;
-	virtual T backward(T val) const = 0;
+	/// calculates f(x)
+	/// input - neuron response
+	/// output - neuron activation
+	virtual T forward(T response) const = 0;
+	/// calculates df(x) in terms of f(x)
+	/// input - neuron delta activation
+	/// output - neuron delta response
+	virtual T backward(T delta) const = 0;
 
+	/// calculates f(x) for each output neuron
 	virtual void apply_forward_inplace(tensor<T, T_SIZE>& a) const {
 		auto I = a.data();
 		auto num = a.size();
@@ -29,6 +36,7 @@ public:
 		}
 	}
 
+	/// calculates neuron response gradients for each neuron
 	virtual void apply_backward_inplace(tensor<T, T_SIZE>& deltas, const tensor<T, T_SIZE>& outputs) const {
 		assert(deltas.size() == outputs.size());
 		auto D = deltas.data();
