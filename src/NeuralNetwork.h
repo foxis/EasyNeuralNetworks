@@ -68,7 +68,7 @@ template<typename T, typename T_SIZE = ENN_DEFAULT_SIZE_TYPE>
 class CrossEntropy : public LossFunctionBase<T, T_SIZE> {
 public:
 	virtual T operator () (tensor<T, T_SIZE>& deltas, const tensor<T, T_SIZE>& target, const tensor<T, T_SIZE>& output) const {
-		ENN_LOSS_LOOP(-*Ta * log(*O), -*D)
+		ENN_LOSS_LOOP(-*Ta * log10(*O), -*D)
 	}
 };
 
