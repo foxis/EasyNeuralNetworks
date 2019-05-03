@@ -7,6 +7,9 @@
 
 namespace EasyNeuralNetworks {
 
+///
+/// This layer is a fully connected layer.
+///
 template <typename T = ENN_DEFAULT_TYPE,
 				  bool BIAS = ENN_DEFAULT_BIAS,
 					typename T_SIZE = ENN_DEFAULT_SIZE_TYPE>

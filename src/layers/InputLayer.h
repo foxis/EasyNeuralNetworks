@@ -7,6 +7,10 @@
 
 namespace EasyNeuralNetworks {
 
+///
+/// This is the input layer. Must be the very first layer in the network.
+/// NOTE: This layer may be omitted from the NN altogether.
+///
 template <typename T = ENN_DEFAULT_TYPE,
 					typename T_SIZE = ENN_DEFAULT_SIZE_TYPE>
 class InputLayer : public LayerBase<T, T_SIZE> {

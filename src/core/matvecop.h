@@ -500,6 +500,7 @@ template<typename T, typename T_SIZE, bool TRANSPOSED>
 inline void convolve_1d_add(T * dst, const T * vec, const T * kernel, T_SIZE N, T_SIZE M, T_SIZE stride) {
 	// vector is N
 	// kernel is M
+	// FIXME use fast algorithm for forward calculation
 	T_SIZE j, i;
 	if (!TRANSPOSED) {
 		// DSTj = SUMi VEC[i + j * stride] * KERNEL[i]
@@ -531,6 +532,7 @@ inline void convolve_2d_add(T * dst, const T * mat, const T * kernel, T_SIZE N, 
 	// kernel is KxL
 	//
 	// DSTab = SUMij MAT[i+j*N + a + b*N] * KERNEL[i + j*K] + KERNEL[K*L]{if BIAS};   a < N - K, b < M - L
+	// FIXME use fast algorithm for forward calculation
 	if (!TRANSPOSED) {
 		T_SIZE a, b, j;
 		const T * p;

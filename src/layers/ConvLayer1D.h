@@ -5,6 +5,10 @@
 
 namespace EasyNeuralNetworks {
 
+///
+/// This layer performs 1D convolution over the input of size (N, 1, M),
+/// where N is the number of time-samples and M number of channels
+///
 template <typename T = ENN_DEFAULT_TYPE,
 				  bool BIAS = ENN_DEFAULT_BIAS,
 					typename T_SIZE = ENN_DEFAULT_SIZE_TYPE>

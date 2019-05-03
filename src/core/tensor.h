@@ -202,7 +202,7 @@ public:
 	}
 
 	inline void reshape(T_SIZE width, T_SIZE height, T_SIZE depth) {
-		assert(width * height * depth == size());
+		assert(width * height * depth <= size());
 		_width = width;
 		_height = height;
 		_depth = depth;
