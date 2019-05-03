@@ -9,6 +9,18 @@ namespace EasyNeuralNetworks {
 /// This layer performs 1D convolution over the input of size (N, 1, M),
 /// where N is the number of time-samples and M number of channels
 ///
+/// Weights are organized as follows:
+/// Wijk = W[i + j * N + k * (N * M + 1)], i < N, j < M, k < K
+/// 		where:
+///				N is the kernel width
+///				M is the number of input channels
+///				K is the number of kernels
+///				k is the kernel number
+///				j is the input channel number
+///
+/// weights shape is (N * M + 1, 1, K), where +1 is reserved for bias
+/// Basically weights tensor contains embedded tensors inside for each kernel,
+/// where the embedded kernel is stored as a tensor of shape (N, 1, M) + bias
 template <typename T = ENN_DEFAULT_TYPE,
 				  bool BIAS = ENN_DEFAULT_BIAS,
 					typename T_SIZE = ENN_DEFAULT_SIZE_TYPE>
@@ -19,51 +31,27 @@ class ConvLayer1D : public LayerBase<T, T_SIZE> {
 	T_SIZE _stride;
 	T_SIZE _kernel_width;
 public:
-	ConvLayer1D(T_LAYER& input, T_INPUT& weights, T_SIZE kernel_width, T_SIZE num_kernels, T_SIZE stride, const T_ACTIVATION& activation)
-		: ConvLayer1D(input.inputs(), weights, kernel_width, num_kernels, stride, activation) {}
+	ConvLayer1D(T_LAYER& input, T_SIZE kernel_width, T_SIZE num_kernels, T_SIZE stride, T_INPUT& weights, const T_ACTIVATION& activation)
+		: ConvLayer1D(input.inputs(), kernel_width, num_kernels, stride, weights, activation) {}
 
 	ConvLayer1D(T_LAYER& input, T_SIZE kernel_width, T_SIZE num_kernels, T_SIZE stride, const T_ACTIVATION& activation)
 		: ConvLayer1D(input.inputs(), kernel_width, num_kernels, stride, activation) {}
 
+	ConvLayer1D(T_INPUT& input, T_SIZE kernel_width, T_SIZE num_kernels, T_SIZE stride, T_INPUT& weights, const T_ACTIVATION& activation)
+		: ConvLayer1D(input, kernel_width, num_kernels, stride, activation) {
+		assert(weights.size() == this->weights().size());
+		this->weights().copy(weights);
+	}
+
 	ConvLayer1D(T_INPUT& input, T_SIZE kernel_width, T_SIZE num_kernels, T_SIZE stride, const T_ACTIVATION& activation)
 		: T_LAYER(input, activation) {
+		assert(input.height() == 1);
 		_stride = stride;
 		_kernel_width = kernel_width;
-		this->outputs().resize((input.width() * input.height() - kernel_width) / stride + 1, 1, num_kernels);
+		this->outputs().resize((input.width() - kernel_width) / stride + 1, 1, num_kernels);
 		this->weights().resize(kernel_width * input.depth() + ENN_BIAS, 1, num_kernels);
 	}
 
-	ConvLayer1D(T_SIZE width, T_SIZE depth, T_SIZE kernel_width, T_SIZE num_kernels, T_SIZE stride, const T_ACTIVATION& activation)
-		: T_LAYER(activation) {
-		_stride = stride;
-		_kernel_width = kernel_width;
-		this->inputs().resize(width, 1, depth);
-		this->outputs().resize((width - kernel_width) / stride + 1, 1, num_kernels);
-		this->weights().resize(kernel_width * depth + ENN_BIAS, 1, num_kernels);
-	}
-
-	ConvLayer1D(T_INPUT& input, T_INPUT& weights, T_SIZE kernel_width, T_SIZE num_kernels, T_SIZE stride, const T_ACTIVATION& activation)
-		: T_LAYER(input, activation) {
-		assert(weights.width() == kernel_width * input.depth() + ENN_BIAS);
-		assert(weights.height() == 1);
-		assert(weights.depth() == num_kernels);
-		_stride = stride;
-		_kernel_width = kernel_width;
-		this->outputs().resize((input.width() * input.height() - kernel_width) / stride + 1, 1, num_kernels);
-		this->weights(weights);
-	}
-
-	ConvLayer1D(T_SIZE width, T_SIZE depth, T_INPUT& weights, T_SIZE kernel_width, T_SIZE num_kernels, T_SIZE stride, const T_ACTIVATION& activation)
-		: T_LAYER(activation) {
-		assert(weights.width() == kernel_width * depth + ENN_BIAS);
-		assert(weights.height() == 1);
-		assert(weights.depth() == num_kernels);
-		_stride = stride;
-		_kernel_width = kernel_width;
-		this->inputs().resize(width, 1, depth);
-		this->outputs().resize((width - kernel_width) / stride + 1, 1, num_kernels);
-		this->weights(weights);
-	}
 
 	///
 	///

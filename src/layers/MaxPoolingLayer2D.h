@@ -8,6 +8,11 @@
 
 namespace EasyNeuralNetworks {
 
+///
+/// This layer performs 2D max pooling with specified width, height and stride.
+/// Default stride is equal to min(width, height).
+/// Accepts any shape, but will perform max pooling along width and height axis
+///
 template <typename T = ENN_DEFAULT_TYPE,
 					typename T_SIZE = ENN_DEFAULT_SIZE_TYPE>
 class MaxPoolingLayer2D : public LayerBase<T, T_SIZE> {
@@ -15,17 +20,21 @@ class MaxPoolingLayer2D : public LayerBase<T, T_SIZE> {
 	ENN_T_LAYER_TYPEDEF(T_LAYER);
 	T_SIZE _kernel_width;
 	T_SIZE _kernel_height;
+	T_SIZE _stride;
 	bool training = false;
 public:
-	MaxPoolingLayer2D(T_LAYER& input, T_SIZE width, T_SIZE height) : MaxPoolingLayer2D(input.inputs(), width, height) {}
-	MaxPoolingLayer2D(T_INPUT& input, T_SIZE width, T_SIZE height) : T_LAYER(input, LUActivation<T>()) {
-		assert(input.width() % width == 0);
-		assert(input.height() % height == 0);
+	MaxPoolingLayer2D(T_LAYER& input, T_SIZE width, T_SIZE height, T_SIZE stride=0) : MaxPoolingLayer2D(input.inputs(), width, height, stride) {}
+	MaxPoolingLayer2D(T_INPUT& input, T_SIZE width, T_SIZE height, T_SIZE stride=0) : T_LAYER(input, LUActivation<T>()) {
 		assert(width > 1);
 		assert(height > 1);
-		this->outputs().resize(input.width() / width, input.height() / height, input.depth());
+		if (stride == 0)
+			stride = min(width, height);
+		assert((input.width() - width) % stride == 0);
+		assert((input.height() - height) % stride == 0);
 		_kernel_width = width;
 		_kernel_height = height;
+		_stride = stride;
+		this->outputs().resize((input.width() - width) / stride + 1, (input.height() - height) / stride + 1, input.depth());
 	}
 
 	///
@@ -38,22 +47,22 @@ public:
 		this->weights().fill(0);
 		for (T_SIZE i = 0; i < this->inputs().depth(); i++) {
 			for (T_SIZE m = 0; m < this->outputs().height(); m++) {
-				T * I = this->inputs().data(m * _kernel_height, i);
+				T * I = this->inputs().data(m * _stride, i);
 				if (training) {
-					T * W = this->weights().data(m * _kernel_height, i);
+					T * W = this->weights().data(m * _stride, i);
 					for (T_SIZE n = 0; n < this->outputs().width(); n++) {
 						T_SIZE x = 0, y = 0;
 						*O = max_mat<T, T_SIZE>(&x, &y, I, this->inputs().width(), _kernel_width, _kernel_height);
 						*(W + x + y * this->inputs().width()) = 1;
-						I += _kernel_width;
-						W += _kernel_width;
+						I += _stride;
+						W += _stride;
 						++O;
 					}
 				} else {
 					for (T_SIZE n = 0; n < this->outputs().width(); n++) {
 						T_SIZE x = 0, y = 0;
 						*O = max_mat<T, T_SIZE>(&x, &y, I, this->inputs().width(), _kernel_width, _kernel_height);
-						I += _kernel_width;
+						I += _stride;
 						++O;
 					}
 				}

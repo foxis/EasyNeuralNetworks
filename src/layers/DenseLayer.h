@@ -9,7 +9,14 @@ namespace EasyNeuralNetworks {
 
 ///
 /// This layer is a fully connected layer.
+/// Can accept any shape of input. Output can be any shape.
 ///
+/// This layer will flatten the input for computation.
+/// Weights are organized as follows:
+/// Wij = W[i + j * (N + 1)], i < N, j < M,
+///     where N is the input size and M is the output size,
+///           i = N is the bias
+/// Weights shape is (N + 1, M, 1), where +1 reserved for biases
 template <typename T = ENN_DEFAULT_TYPE,
 				  bool BIAS = ENN_DEFAULT_BIAS,
 					typename T_SIZE = ENN_DEFAULT_SIZE_TYPE>
@@ -18,47 +25,48 @@ class DenseLayer : public LayerBase<T, T_SIZE> {
 	ENN_T_ACTIVATION_TYPEDEF(T_ACTIVATION);
 	ENN_T_LAYER_TYPEDEF(T_LAYER);
 public:
-	DenseLayer(T_LAYER& input, T_LAYER& output, const T_ACTIVATION& activation)
-		: DenseLayer(input.outputs(), output.inputs(), activation) {}
-
-	DenseLayer(T_LAYER& input, T_LAYER& output, T_INPUT& weights, const T_ACTIVATION& activation)
-			: T_LAYER(input.outputs(), output.inputs(), weights, activation) {
-		assert(weights.size() == (input.outputs().size() + ENN_BIAS) * output.inputs().size());
-	}
-
-	DenseLayer(T_LAYER& input, T_SIZE out_width, T_SIZE out_height, const T_ACTIVATION& activation)
-		: DenseLayer(input.outputs(), out_width, out_height, activation) {}
-
-	DenseLayer(T_LAYER& input, T_SIZE num_outputs, const T_ACTIVATION& activation)
-		: DenseLayer(input.outputs(), num_outputs, activation) {}
-
-	DenseLayer(T_LAYER& input, T_SIZE num_outputs, T_INPUT& weights, const T_ACTIVATION& activation)
-		: T_LAYER(input.outputs(), activation) {
-		assert(weights.size() == (input.outputs().size() + ENN_BIAS) * num_outputs);
-		this->outputs().resize(num_outputs, 1, 1);
-		this->weights(weights);
-	}
+	DenseLayer(T_LAYER& input, T_SIZE out_width, T_INPUT& weights, const T_ACTIVATION& activation)
+		: DenseLayer(input.inputs(), out_width, weights, activation) { }
 
 	DenseLayer(T_LAYER& input, T_SIZE out_width, T_SIZE out_height, T_INPUT& weights, const T_ACTIVATION& activation)
-		: T_LAYER(input.outputs(), activation) {
-		assert(weights.size() == (input.outputs().size() + ENN_BIAS) * out_width * out_height);
-		this->outputs().resize(out_width, out_height, 1);
-		this->weights(weights);
+		: DenseLayer(input.inputs(), out_width, out_height, weights, activation) { }
+
+	DenseLayer(T_LAYER& input, T_SIZE out_width, T_SIZE out_height, T_SIZE out_depth, T_INPUT& weights, const T_ACTIVATION& activation)
+		: DenseLayer(input.inputs(), out_width, out_height, out_depth, weights, activation) { }
+
+
+	DenseLayer(T_LAYER& input, T_SIZE out_width, const T_ACTIVATION& activation)
+		: DenseLayer(input.inputs(), out_width, activation) {	}
+
+	DenseLayer(T_LAYER& input, T_SIZE out_width, T_SIZE out_height, const T_ACTIVATION& activation)
+		: DenseLayer(input.inputs(), out_width, out_height, activation) { }
+
+	DenseLayer(T_LAYER& input, T_SIZE out_width, T_SIZE out_height, T_SIZE out_depth, const T_ACTIVATION& activation)
+		: DenseLayer(input.inputs(), out_width, out_height, out_depth, activation) { }
+
+
+	DenseLayer(T_INPUT& input, T_SIZE out_width, T_INPUT& weights, const T_ACTIVATION& activation)
+		: DenseLayer(input, out_width, 1, weights, activation) { }
+
+	DenseLayer(T_INPUT& input, T_SIZE out_width, T_SIZE out_height, T_INPUT& weights, const T_ACTIVATION& activation)
+		: DenseLayer(input, out_width, out_height, 1, weights, activation) { }
+
+	DenseLayer(T_INPUT& input, T_SIZE out_width, T_SIZE out_height, T_SIZE out_depth, T_INPUT& weights, const T_ACTIVATION& activation)
+		: DenseLayer(input, out_width, out_height, out_depth, activation) {
+		assert(weights.size() == this->weights().size());
+		this->weights().copy(weights);
 	}
+
+	DenseLayer(T_INPUT& input, T_SIZE out_width, const T_ACTIVATION& activation)
+		: DenseLayer(input, out_width, 1, activation) {	}
 
 	DenseLayer(T_INPUT& input, T_SIZE out_width, T_SIZE out_height, const T_ACTIVATION& activation)
+		: DenseLayer(input, out_width, out_height, 1, activation) { }
+
+	DenseLayer(T_INPUT& input, T_SIZE out_width, T_SIZE out_height, T_SIZE out_depth, const T_ACTIVATION& activation)
 		: T_LAYER(input, activation)
 	{
-		this->outputs().resize(out_width, out_height, 1);
-		this->weights().resize(input.size() + ENN_BIAS, this->outputs().size(), 1);
-	}
-
-	DenseLayer(T_INPUT& input, T_SIZE num_outputs, const T_ACTIVATION& activation)
-		: DenseLayer(input, num_outputs, 1, activation) {	}
-
-	DenseLayer(T_INPUT& input, T_INPUT& output, const T_ACTIVATION& activation)
-		: T_LAYER(input, output, activation)
-	{
+		this->outputs().resize(out_width, out_height, out_depth);
 		this->weights().resize(input.size() + ENN_BIAS, this->outputs().size(), 1);
 	}
 

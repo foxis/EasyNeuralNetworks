@@ -8,20 +8,29 @@
 
 namespace EasyNeuralNetworks {
 
+///
+/// This layer performs 1D max pooling with specified width and stride.
+/// Default stride is equal to width.
+/// Accepts any shape, but will perform max pooling along width axis only
+///
 template <typename T = ENN_DEFAULT_TYPE,
 					typename T_SIZE = ENN_DEFAULT_SIZE_TYPE>
 class MaxPoolingLayer1D : public LayerBase<T, T_SIZE> {
 	ENN_T_INPUT_TYPEDEF(T_INPUT);
 	ENN_T_LAYER_TYPEDEF(T_LAYER);
 	T_SIZE _kernel_width;
+	T_SIZE _stride;
 	bool training = false;
 public:
-	MaxPoolingLayer1D(T_LAYER& input, T_SIZE width) : MaxPoolingLayer1D(input.inputs(), width) {}
-	MaxPoolingLayer1D(T_INPUT& input, T_SIZE width) : T_LAYER(input, LUActivation<T>()) {
-		assert(input.width() % width == 0);
+	MaxPoolingLayer1D(T_LAYER& input, T_SIZE width, T_SIZE stride=0) : MaxPoolingLayer1D(input.inputs(), width, stride) {}
+	MaxPoolingLayer1D(T_INPUT& input, T_SIZE width, T_SIZE stride=0) : T_LAYER(input, LUActivation<T>()) {
 		assert(width > 1);
-		this->outputs().resize(input.width() / width, input.height(), input.depth());
 		_kernel_width = width;
+		if (stride == 0)
+			stride = width;
+		assert((input.width() - width) % stride == 0);
+		_stride = stride;
+		this->outputs().resize((input.width() - width) / stride + 1, input.height(), input.depth());
 	}
 
 	///
@@ -41,15 +50,15 @@ public:
 						T_SIZE idx = 0;
 						*O = max_arr<T, T_SIZE>(&idx, I, _kernel_width);
 						*(W + idx) = 1;
-						I += _kernel_width;
-						W += _kernel_width;
+						I += _stride;
+						W += _stride;
 						++O;
 					}
 				} else {
 					for (T_SIZE k = 0; k < this->outputs().width(); k++) {
 						T_SIZE idx = 0;
 						*O = max_arr<T, T_SIZE>(&idx, I, _kernel_width);
-						I += _kernel_width;
+						I += _stride;
 						++O;
 					}
 				}
