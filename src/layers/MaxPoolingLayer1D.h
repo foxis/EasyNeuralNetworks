@@ -22,7 +22,6 @@ class MaxPoolingLayer1D : public LayerBase<T, T_SIZE> {
 	T_SIZE _stride;
 	bool training = false;
 public:
-	MaxPoolingLayer1D(T_LAYER& input, T_SIZE width, T_SIZE stride=0) : MaxPoolingLayer1D(input.inputs(), width, stride) {}
 	MaxPoolingLayer1D(T_INPUT& input, T_SIZE width, T_SIZE stride=0) : T_LAYER(input, LUActivation<T>()) {
 		assert(width > 1);
 		_kernel_width = width;

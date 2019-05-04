@@ -15,7 +15,6 @@ class DropOutLayer2D : public LayerBase<T, T_SIZE> {
 	ENN_T_LAYER_TYPEDEF(T_LAYER);
 	T _dropout_percent;
 public:
-	DropOutLayer2D(T_LAYER& input, T dropout_percent) : DropOutLayer2D(input.inputs(), dropout_percent) {}
 	DropOutLayer2D(T_INPUT& input, T dropout_percent) : T_LAYER(input, LUActivation<T>()) {
 		this->outputs(this->inputs());
 		_dropout_percent = dropout_percent;

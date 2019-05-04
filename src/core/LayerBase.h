@@ -72,17 +72,15 @@ protected:
 public:
 	LayerBase(const T_ACTIVATION& activation) : _activation(activation) {	}
 
-	LayerBase(T_LAYER& input, const T_ACTIVATION& activation)
-	 		: _inputs(input.outputs()), _activation(activation) {	}
-
 	LayerBase(T_INPUT& inputs, const T_ACTIVATION& activation)
 	 		: _inputs(inputs), _activation(activation) {	}
 
-	LayerBase(T_LAYER& input, T_LAYER& output, T_INPUT& weights, const T_ACTIVATION& activation)
-	 		: _inputs(input.outputs()), _outputs(output.inputs()), _weights(weights), _activation(activation) {	}
-
 	LayerBase(T_INPUT& inputs, T_INPUT& outputs, T_INPUT& weights, const T_ACTIVATION& activation)
 	 		: _inputs(inputs), _outputs(outputs), _weights(weights), _activation(activation) {	}
+
+
+	inline operator T_INPUT & () { return _outputs; }
+	inline operator const T_INPUT & () const { return _outputs; }
 
 	///
 	///

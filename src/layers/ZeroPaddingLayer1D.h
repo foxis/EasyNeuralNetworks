@@ -16,7 +16,6 @@ class ZeroPaddingLayer1D : public LayerBase<T, T_SIZE> {
 	ENN_T_LAYER_TYPEDEF(T_LAYER);
 	T_SIZE _padding;
 public:
-	ZeroPaddingLayer1D(T_LAYER& input, T_SIZE padding) : ZeroPaddingLayer1D(input.inputs(), padding) {}
 	ZeroPaddingLayer1D(T_INPUT& input, T_SIZE padding) : T_LAYER(input, LUActivation<T>()) {
 		this->outputs().resize(input.width() + 2 * padding, input.height(), input.depth());
 		this->outputs().fill(0);

@@ -32,12 +32,6 @@ class ConvLayer2D : public LayerBase<T, T_SIZE> {
 	T_SIZE _kernel_width;
 	T_SIZE _kernel_height;
 public:
-	ConvLayer2D(T_LAYER& input, T_SIZE kernel_width, T_SIZE kernel_height, T_SIZE num_kernels, T_SIZE stride, T_LAYER& weights, const T_ACTIVATION& activation)
-		: ConvLayer2D(input.inputs(), kernel_width, kernel_height, num_kernels, stride, weights, activation) { }
-
-	ConvLayer2D(T_LAYER& input, T_SIZE kernel_width, T_SIZE kernel_height, T_SIZE num_kernels, T_SIZE stride, const T_ACTIVATION& activation)
-		: ConvLayer2D(input.inputs(), kernel_width, kernel_height, num_kernels, stride, activation) { }
-
 	ConvLayer2D(T_INPUT& input, T_SIZE kernel_width, T_SIZE kernel_height, T_SIZE num_kernels, T_SIZE stride, T_LAYER& weights, const T_ACTIVATION& activation)
 		: ConvLayer2D(input, kernel_width, kernel_height, num_kernels, stride, activation) {
 		assert(weights.size() == this->weights().size());

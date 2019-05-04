@@ -17,7 +17,6 @@ class ReshapeLayer : public LayerBase<T, T_SIZE> {
 	ENN_T_LAYER_TYPEDEF(T_LAYER);
 	T _dropout_percent;
 public:
-	ReshapeLayer(T_LAYER& input, T_SIZE width, T_SIZE height, T_SIZE depth) : ReshapeLayer(input.inputs(), width, height, depth) {}
 	ReshapeLayer(T_INPUT& input, T_SIZE width, T_SIZE height, T_SIZE depth) : T_LAYER(input, LUActivation<T>()) {
 		this->outputs(this->inputs());
 		this->outputs().reshape(width, height, depth);

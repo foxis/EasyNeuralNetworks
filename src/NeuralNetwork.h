@@ -129,8 +129,13 @@ public:
 	}
 
 	inline std::vector<T_LAYER*>& layers() { return _layers; }
-	inline T_LAYER* input() { return _layers.front(); }
-	inline T_LAYER* output() { return _layers.back(); }
+	inline T_LAYER* first() { return _layers.front(); }
+	inline T_LAYER* last() { return _layers.back(); }
+
+	inline T_INPUT& input() { return _layers.front()->inputs(); }
+	inline T_INPUT& output() { return _layers.back()->outputs(); }
+	inline const T_INPUT& input() const { return _layers.front()->inputs(); }
+	inline const T_INPUT& output() const { return _layers.back()->outputs(); }
 
 	inline void calculate() {
 		for (auto & L : _layers)

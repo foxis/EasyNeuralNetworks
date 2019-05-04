@@ -31,12 +31,6 @@ class ConvLayer1D : public LayerBase<T, T_SIZE> {
 	T_SIZE _stride;
 	T_SIZE _kernel_width;
 public:
-	ConvLayer1D(T_LAYER& input, T_SIZE kernel_width, T_SIZE num_kernels, T_SIZE stride, T_INPUT& weights, const T_ACTIVATION& activation)
-		: ConvLayer1D(input.inputs(), kernel_width, num_kernels, stride, weights, activation) {}
-
-	ConvLayer1D(T_LAYER& input, T_SIZE kernel_width, T_SIZE num_kernels, T_SIZE stride, const T_ACTIVATION& activation)
-		: ConvLayer1D(input.inputs(), kernel_width, num_kernels, stride, activation) {}
-
 	ConvLayer1D(T_INPUT& input, T_SIZE kernel_width, T_SIZE num_kernels, T_SIZE stride, T_INPUT& weights, const T_ACTIVATION& activation)
 		: ConvLayer1D(input, kernel_width, num_kernels, stride, activation) {
 		assert(weights.size() == this->weights().size());

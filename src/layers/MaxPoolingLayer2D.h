@@ -23,7 +23,6 @@ class MaxPoolingLayer2D : public LayerBase<T, T_SIZE> {
 	T_SIZE _stride;
 	bool training = false;
 public:
-	MaxPoolingLayer2D(T_LAYER& input, T_SIZE width, T_SIZE height, T_SIZE stride=0) : MaxPoolingLayer2D(input.inputs(), width, height, stride) {}
 	MaxPoolingLayer2D(T_INPUT& input, T_SIZE width, T_SIZE height, T_SIZE stride=0) : T_LAYER(input, LUActivation<T>()) {
 		assert(width > 1);
 		assert(height > 1);

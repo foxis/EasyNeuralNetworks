@@ -17,7 +17,6 @@ class FlattenLayer : public ReshapeLayer<T, T_SIZE> {
 	ENN_T_LAYER_TYPEDEF(T_LAYER);
 	T _dropout_percent;
 public:
-	FlattenLayer(T_LAYER& input) : FlattenLayer(input.inputs()) {}
 	FlattenLayer(T_INPUT& input) : ReshapeLayer<T, T_SIZE>(input, input.size(), 1, 1) {}
 
 };

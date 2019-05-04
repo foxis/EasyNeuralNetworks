@@ -25,26 +25,6 @@ class DenseLayer : public LayerBase<T, T_SIZE> {
 	ENN_T_ACTIVATION_TYPEDEF(T_ACTIVATION);
 	ENN_T_LAYER_TYPEDEF(T_LAYER);
 public:
-	DenseLayer(T_LAYER& input, T_SIZE out_width, T_INPUT& weights, const T_ACTIVATION& activation)
-		: DenseLayer(input.inputs(), out_width, weights, activation) { }
-
-	DenseLayer(T_LAYER& input, T_SIZE out_width, T_SIZE out_height, T_INPUT& weights, const T_ACTIVATION& activation)
-		: DenseLayer(input.inputs(), out_width, out_height, weights, activation) { }
-
-	DenseLayer(T_LAYER& input, T_SIZE out_width, T_SIZE out_height, T_SIZE out_depth, T_INPUT& weights, const T_ACTIVATION& activation)
-		: DenseLayer(input.inputs(), out_width, out_height, out_depth, weights, activation) { }
-
-
-	DenseLayer(T_LAYER& input, T_SIZE out_width, const T_ACTIVATION& activation)
-		: DenseLayer(input.inputs(), out_width, activation) {	}
-
-	DenseLayer(T_LAYER& input, T_SIZE out_width, T_SIZE out_height, const T_ACTIVATION& activation)
-		: DenseLayer(input.inputs(), out_width, out_height, activation) { }
-
-	DenseLayer(T_LAYER& input, T_SIZE out_width, T_SIZE out_height, T_SIZE out_depth, const T_ACTIVATION& activation)
-		: DenseLayer(input.inputs(), out_width, out_height, out_depth, activation) { }
-
-
 	DenseLayer(T_INPUT& input, T_SIZE out_width, T_INPUT& weights, const T_ACTIVATION& activation)
 		: DenseLayer(input, out_width, 1, weights, activation) { }
 
@@ -53,6 +33,11 @@ public:
 
 	DenseLayer(T_INPUT& input, T_SIZE out_width, T_SIZE out_height, T_SIZE out_depth, T_INPUT& weights, const T_ACTIVATION& activation)
 		: DenseLayer(input, out_width, out_height, out_depth, activation) {
+			Serial.println(input.size());
+			Serial.println(this->outputs().size());
+			Serial.println(weights.size());
+			Serial.println(this->weights().size());
+
 		assert(weights.size() == this->weights().size());
 		this->weights(weights);
 	}
