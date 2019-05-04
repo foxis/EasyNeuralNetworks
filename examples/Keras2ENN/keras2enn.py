@@ -2,6 +2,10 @@
 
 import argparse
 import keras as K
+from collections import namedtuple
+
+
+Args = namedtuple("Args", "output namespace dropout flatten verbose")
 
 
 class LayerWrapper(object):
@@ -210,8 +214,15 @@ class LayerWrapper(object):
     def l_Flatten(self, f, l):
         pass
 
-def main(args):
-    model = K.models.load_model(args.model)
+
+def export_model_to_header(model, args):
+    if args.verbose:
+        print("Model: ", model.__class__.__name__)
+        print("Output header file: ", args.output)
+        print("Output namespace: ", args.namespace)
+        print("Output nn: nn")
+        print("")
+
     assert (isinstance(model, K.models.Sequential))
 
     layers = [LayerWrapper(l, args) for l in model.layers]
@@ -219,26 +230,26 @@ def main(args):
 
     with open(args.output, "w") as f:
         f.write("""// Automatically generated NN header using keras2enn.py
-//
-#if !defined(K2ENN_{0}_H)
-#define K2ENN_{0}_H
+    //
+    #if !defined(K2ENN_{0}_H)
+    #define K2ENN_{0}_H
 
-#include <NeuralNetwork.h>
+    #include <NeuralNetwork.h>
 
-namespace {1} {{
+    namespace {1} {{
 
-using namespace EasyNeuralNetworks;
+    using namespace EasyNeuralNetworks;
 
-// Neural network weights definition
-""".format(args.output.split(".")[0].upper(), args.namespace))
+    // Neural network weights definition
+    """.format(args.output.split(".")[0].upper(), args.namespace))
 
         for l in layers:
             l.write_weights(f)
 
         f.write("""
 
-// Neural network layers definition
-""")
+    // Neural network layers definition
+    """)
 
         last = None
         for l in layers:
@@ -246,13 +257,18 @@ using namespace EasyNeuralNetworks;
             last = l
 
         f.write("""
-// Neural network
-NeuralNetwork nn({}, {});
+    // Neural network
+    NeuralNetwork nn({}, {});
 
-}};
+    }};
 
-#endif
-""".format(sum(l.active for l in layers), ", ".join("&" + l.name for l in layers if l.active)))
+    #endif
+    """.format(sum(l.active for l in layers), ", ".join("&" + l.name for l in layers if l.active)))
+
+
+def main(args):
+    model = K.models.load_model(args.model)
+    export_model_to_header(model, args)
 
 
 if __name__ == "__main__":
