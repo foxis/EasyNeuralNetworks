@@ -18,7 +18,7 @@ class ZeroPaddingLayer2D : public LayerBase<T, T_SIZE> {
 	T_SIZE _padding_h;
 public:
 	ZeroPaddingLayer2D(T_LAYER& input, T_SIZE padding_w, T_SIZE padding_h) : ZeroPaddingLayer2D(input.inputs(), padding_w, padding_h) {}
-	ZeroPaddingLayer2D(T_INPUT& input, T_SIZE padding_w) : T_LAYER(input, LUActivation<T>()) {
+	ZeroPaddingLayer2D(T_INPUT& input, T_SIZE padding_w, T_SIZE padding_h) : T_LAYER(input, LUActivation<T>()) {
 		this->outputs().resize(input.width() + 2 * padding_w, input.height() + 2 * padding_h, input.depth());
 		this->outputs().fill(0);
 		_padding_w = padding_w;

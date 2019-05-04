@@ -22,8 +22,8 @@ tensor<TYPE> hidden_weights(ProgmemHelper<TYPE>(weights), 3, 2, 1);
 tensor<TYPE> output_weights(ProgmemHelper<TYPE>(weights1), 3, 1, 1);
 
 InputLayer<TYPE> input(2);
-DenseLayer<TYPE> hidden(input, 2, hidden_weights, tanha);
-DenseLayer<TYPE> output(hidden, 1, output_weights, tanha);
+DenseLayer<TYPE> hidden(input, hidden_weights, 2, tanha);
+DenseLayer<TYPE> output(hidden, output_weights, 1, tanha);
 
 NeuralNetwork<TYPE> nn(3, &input, &hidden, &output);
 

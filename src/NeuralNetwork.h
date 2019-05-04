@@ -16,8 +16,9 @@
 #include <layers/ConvLayer2D.h>
 #include <layers/MaxPoolingLayer1D.h>
 #include <layers/MaxPoolingLayer2D.h>
-#include <layers/FlattenLayer.h>
+
 #include <layers/ReshapeLayer.h>
+#include <layers/FlattenLayer.h>
 #include <layers/ConcatLayer.h>
 #include <layers/ZeroPaddingLayer1D.h>
 #include <layers/ZeroPaddingLayer2D.h>

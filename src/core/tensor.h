@@ -107,6 +107,7 @@ public:
 		data.read(this->_data, width * height * depth);
 	}
 	tensor(const tensor<T, T_SIZE>& t) {
+		this->_data = NULL;
 		*this = t;
 	}
 
@@ -115,6 +116,8 @@ public:
 	}
 
 	inline void operator = (const tensor<T, T_SIZE>& t) {
+		if (this->_data != NULL && this->_needs_free)
+			delete[] this->_data;
 		this->_data = t._data;
 		this->_width = t._width;
 		this->_height = t._height;

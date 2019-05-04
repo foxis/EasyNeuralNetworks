@@ -54,7 +54,7 @@ public:
 	DenseLayer(T_INPUT& input, T_SIZE out_width, T_SIZE out_height, T_SIZE out_depth, T_INPUT& weights, const T_ACTIVATION& activation)
 		: DenseLayer(input, out_width, out_height, out_depth, activation) {
 		assert(weights.size() == this->weights().size());
-		this->weights().copy(weights);
+		this->weights(weights);
 	}
 
 	DenseLayer(T_INPUT& input, T_SIZE out_width, const T_ACTIVATION& activation)

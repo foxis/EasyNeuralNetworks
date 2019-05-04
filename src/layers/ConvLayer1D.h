@@ -40,7 +40,7 @@ public:
 	ConvLayer1D(T_INPUT& input, T_SIZE kernel_width, T_SIZE num_kernels, T_SIZE stride, T_INPUT& weights, const T_ACTIVATION& activation)
 		: ConvLayer1D(input, kernel_width, num_kernels, stride, activation) {
 		assert(weights.size() == this->weights().size());
-		this->weights().copy(weights);
+		this->weights(weights);
 	}
 
 	ConvLayer1D(T_INPUT& input, T_SIZE kernel_width, T_SIZE num_kernels, T_SIZE stride, const T_ACTIVATION& activation)
