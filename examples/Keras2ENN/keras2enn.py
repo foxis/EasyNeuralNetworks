@@ -41,20 +41,41 @@ class LayerWrapper(object):
         self.use_dropout = args.dropout
         self.use_flatten = args.flatten
 
+        if args.verbose:
+            print("Encountered layer", keras_layer.__class__.__name__, "as", keras_layer.name)
+            print("\tinput shape: ", keras_layer.input_shape)
+            print("\toutput shape: ", keras_layer.output_shape)
+            if keras_layer.weights:
+                print("\tweights shape: ", keras_layer.weights[0].shape)
+                print("\tbias shape: ", keras_layer.weights[1].shape)
+            if hasattr(keras_layer, "padding"):
+                print("\tpadding: ", keras_layer.padding)
+            if hasattr(keras_layer, "filters"):
+                print("\tfilters: ", keras_layer.filters)
+            if hasattr(keras_layer, "strides"):
+                print("\tstrides: ", keras_layer.strides)
+            if hasattr(keras_layer, "pool_size"):
+                print("\tpool_size: ", keras_layer.pool_size)
+            if hasattr(keras_layer, "rate"):
+                print("\trate: ", keras_layer.rate)
+            print("")
+
         assert (any(isinstance(keras_layer, t) for t in LayerWrapper.TYPES))
 
     def write_weights(self, f):
         w = self.keras_layer.get_weights()
-        print("Writing weights for", self.name)
-        f.write("TYPE {}[] PROGMEM = {{\r\n".format(self.name))
-        wb = getattr(self, "w_" + self.keras_layer.__class__.__name__)(f, w)
-        for i, w in enumerate(wb):
-            f.write("{}, ".format(w))
-            if i % 20 == 0 and i != 0:
+        res = getattr(self, "w_" + self.keras_layer.__class__.__name__)(f, w)
+        if res is not None:
+            print("Writing weights for", self.name)
+            wb, width, height, depth = res
+            f.write("TYPE arr_{}[] PROGMEM = {{\n".format(self.name))
+            for i, w in enumerate(wb):
+                f.write("{}, ".format(w))
+                if i % 20 == 0 and i != 0:
+                    f.write("\n")
+            if len(wb) % 20:
                 f.write("\n")
-        if len(wb) % 20:
-            f.write("\n")
-        f.write("};\n\n")
+            f.write("}};\ntensor<TYPE> w_{0}(ProgmemHelper<TYPE>(arr_{0}), /* width= */ {1}, /* height= */ {2}, /* depth= */ {3});\n\n".format(self.name, width, height, depth))
 
     def write_layers(self, f, last):
         print("Writing layers for", self.name)
@@ -89,23 +110,29 @@ class LayerWrapper(object):
         weights = w[0].transpose().tolist()
         bias = w[1].tolist()
 
+        width, channels, kernels = w[0].shape
+
         wb = []
         for w, b in zip(weights, bias):
-            wb += w + [b]
+            for c in w:
+                wb += c + [b]
 
-        return wb
+        return wb, (width * channels + 1), 1, kernels
 
     def w_Conv2D(self, f, w):
         weights = w[0].transpose().tolist()
         bias = w[1].tolist()
 
+        width, height, channels, kernels = w[0].shape
+
         wb = []
         for w, b in zip(weights, bias):
-            for ww in zip(*w):
-                wb += ww
-            wb += b
+            for c in w:
+                for ww in zip(*c):
+                    wb += ww
+            wb += [b]
 
-        return wb
+        return wb, (width * height * channels + 1), 1, kernels
 
     def w_Dense(self, f, w):
         weights = w[0].transpose().tolist()
@@ -115,7 +142,7 @@ class LayerWrapper(object):
         for w, b in zip(weights, bias):
             wb += w + [b]
 
-        return wb
+        return wb, len(wb), 1, 1
 
     def w_Dropout(self, f, w): pass
     def w_MaxPooling1D(self, f, w): pass
@@ -133,9 +160,9 @@ class LayerWrapper(object):
             width = int(self.keras_layer.input.shape[1])
             assert (int(self.keras_layer.input.shape[1]) == 1)
             depth = int(self.keras_layer.input.shape[-1])
-            f.write("{}, {}".format(width, depth))
+            f.write("/* width= */ {}, /* depth= */ {}".format(width, depth))
 
-        f.write(", ProgmemHelper<TYPE>(w_{}), {}, {}, {}, {}".format(self.name, kernel_w, kernels, stride, self.enn_activation))
+        f.write(", /* kernel_width= */ {}, /* kernels= */ {}, /* stride= */ {}, /* weights= */ w_{}, /* activation= */ {}".format(kernel_w, kernels, stride, self.name, self.enn_activation))
 
     def l_Conv2D(self, f, l):
         kernel_w, kernel_h = self.keras_layer.kernel_size
@@ -145,46 +172,43 @@ class LayerWrapper(object):
         assert (self.keras_layer.padding == 'valid')
 
         if not l:
-            width = int(self.keras_layer.input.shape[1])
-            height = int(self.keras_layer.input.shape[2])
-            depth = int(self.keras_layer.input.shape[-1])
-            f.write("{}, {}, {}".format(width, height, depth))
+            shape = self.keras_layer.input_shape[1:]
+            f.write(", ".join("/* {} */ {}".format(n, i) for n, i in zip("width height depth".split(), shape)))
 
-        f.write(", ProgmemHelper<TYPE>(w_{}), {}, {}, {}, {}, {}".format(self.name, kernel_w, kernel_h, kernels, stride, self.enn_activation))
+        f.write(", /* kernel_width= */ {}, /* kernel_height= */ {}, /* kernels= */ {}, /* stride= */ {}, /* weights= */ w_{}, /* activation= */ {}".format(kernel_w, kernel_h, kernels, stride, self.name, self.enn_activation))
 
     def l_Dense(self, f, l):
         outputs = self.keras_layer.output_shape[-1]
 
         if not l:
-            width = int(self.keras_layer.input.shape[1])
-            height = int(self.keras_layer.input.shape[2])
-            depth = int(self.keras_layer.input.shape[-1])
-            f.write("{}, {}, {}".format(width, height, depth))
+            shape = self.keras_layer.input_shape[1:]
+            f.write(", ".join("/* {} */ {}".format(n, i) for n, i in zip("width height depth".split(), shape)))
 
-        f.write(", {}, ProgmemHelper<TYPE>(w_{}), {}".format(outputs, self.name, self.enn_activation))
+        f.write(", /* out_width= */ {}, /* weights= */ w_{}, /* activation= */ {}".format(outputs, self.name, self.enn_activation))
 
     def l_Dropout(self, f, l):
         rate = self.keras_layer.rate
-        f.write(", {}".format(rate))
+        f.write(", /* rate= */ {}".format(rate))
 
     def l_Dropout1D(self, f, l):
         rate = self.keras_layer.rate
-        f.write(", {}".format(rate))
+        f.write(", /* rate= */ {}".format(rate))
 
     def l_Dropout2D(self, f, l):
         rate = self.keras_layer.rate
-        f.write(", {}".format(rate))
+        f.write(", /* rate= */ {}".format(rate))
 
     def l_MaxPooling1D(self, f, l):
         kernel_w = self.keras_layer.pool_size[0]
-        f.write(", {}".format(kernel_w))
+        f.write(", /* width= */ {}, /* stride= */ {}".format(kernel_w, self.keras_layer.strides[0]))
 
     def l_MaxPooling2D(self, f, l):
+        assert(self.keras_layer.strides[0] == self.keras_layer.strides[1])
         kernel_w, kernel_h = self.keras_layer.pool_size
-        f.write(", {}, {}".format(kernel_w, kernel_h))
+        f.write(", /* width= */ {}, /* height= */ {}, /* stride= */ {}".format(kernel_w, kernel_h, self.keras_layer.strides[0]))
 
-    def l_Flatten(self, f, l): pass
-
+    def l_Flatten(self, f, l):
+        pass
 
 def main(args):
     model = K.models.load_model(args.model)
@@ -201,9 +225,9 @@ def main(args):
 
 #include <NeuralNetwork.h>
 
-using namespace EasyNeuralNetworks;
-
 namespace {1} {{
+
+using namespace EasyNeuralNetworks;
 
 // Neural network weights definition
 """.format(args.output.split(".")[0].upper(), args.namespace))
