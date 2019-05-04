@@ -8,7 +8,7 @@
 namespace EasyNeuralNetworks {
 
 template<typename T, typename T_SIZE>
-inline T min_mat(T_SIZE * index_x, T_SIZE index_y, const T * a, T_SIZE in_width, T_SIZE width, T_SIZE height, T_SIZE stride = 1) {
+inline T min_mat(T_SIZE * index_x, T_SIZE * index_y, const T * a, T_SIZE in_width, T_SIZE width, T_SIZE height, T_SIZE stride = 1) {
 	T acc = std::numeric_limits<T>::infinity();
 	T_SIZE x = 0, y = 0;
 	for (T_SIZE i = 0; i < height; i++) {
@@ -30,7 +30,7 @@ inline T min_mat(T_SIZE * index_x, T_SIZE index_y, const T * a, T_SIZE in_width,
 }
 
 template<typename T, typename T_SIZE>
-inline T max_mat(T_SIZE * index_x, T_SIZE index_y, const T * a, T_SIZE in_width, T_SIZE width, T_SIZE height, T_SIZE stride = 1) {
+inline T max_mat(T_SIZE * index_x, T_SIZE * index_y, const T * a, T_SIZE in_width, T_SIZE width, T_SIZE height, T_SIZE stride = 1) {
 	T acc = -std::numeric_limits<T>::infinity();
 	T_SIZE x = 0, y = 0;
 	for (T_SIZE i = 0; i < height; i++) {

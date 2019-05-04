@@ -1,0 +1,13 @@
+
+This directory contains architecture dependant implementations of
+array/vector/matrix/convolution algorithms.
+
+files:
+  mvo_array.h
+	mvo_vector.h
+	mvo_matrix.h
+	mvo_conv.h
+	mvo_rand.h
+
+Implemented architectures:
+	pure C++
