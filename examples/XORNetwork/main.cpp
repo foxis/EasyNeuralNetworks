@@ -1,31 +1,12 @@
 #include <Arduino.h>
 #include <NeuralNetwork.h>
 
-using namespace EasyNeuralNetworks;
-
 #define TYPE float
 
-TanhActivation<TYPE> tanha;
+#include <xor.h>
 
-///
-/// Weights from: https://towardsdatascience.com/tflearn-soving-xor-with-a-2x2x1-feed-forward-neural-network-6c07d88689ed
-///
-TYPE weights[] PROGMEM = {
-	3.86708593, 3.87053323, -1.82562542,
-  -3.11288071, -3.1126008, 4.58438063
-};
-TYPE weights1[] PROGMEM = {
-	5.19325304, 5.19325304, -4.87336922
-};
+using namespace EasyNeuralNetworks;
 
-tensor<TYPE> hidden_weights(ProgmemHelper<TYPE>(weights), 3, 2, 1);
-tensor<TYPE> output_weights(ProgmemHelper<TYPE>(weights1), 3, 1, 1);
-
-InputLayer<TYPE> input(2);
-DenseLayer<TYPE> hidden(input, hidden_weights, 2, tanha);
-DenseLayer<TYPE> output(hidden, output_weights, 1, tanha);
-
-NeuralNetwork<TYPE> nn(3, &input, &hidden, &output);
 
 void setup() {
 	Serial.begin(115200);
@@ -40,13 +21,27 @@ TYPE inputs[] = {
 };
 
 void loop() {
-	float o[4];
+	TYPE o[4];
 	unsigned long now = micros();
+	tensor<TYPE> &input = XOR::nn.input();
+	tensor<TYPE> &output = XOR::nn.output();
 
 	for (int i = 0; i < 4; i++) {
-		input.inputs().copy(inputs + i * 2);
-		nn.calculate();
-		o[i] = output.outputs()[0];
+		input.copy(inputs + i * 2);
+		XOR::nn.calculate();
+		o[i] = output[0];
+
+		/*tensor<TYPE> &input = XOR::dense_1.inputs();
+		for (int j = 0; j < input.size(); j++) {
+			Serial.print(input[j]); Serial.print(" ");
+		}
+		Serial.println();
+
+		tensor<TYPE> &hidden = XOR::dense_1.outputs();
+		for (int j = 0; j < hidden.size(); j++) {
+			Serial.print(hidden[j]); Serial.print(" ");
+		}
+		Serial.println();*/
 	}
 
 	now = micros() - now;
@@ -56,7 +51,7 @@ void loop() {
 		Serial.print("Inputs: ");
 		Serial.print(inputs[i * 2]); Serial.print(", "); Serial.print(inputs[i * 2 + 1]); Serial.println();
 		Serial.print("Output: ");
-		Serial.print(o[i]); Serial.println();
+		Serial.print((float)o[i]); Serial.println();
 	}
 	delay(1000);
 }
