@@ -101,8 +101,8 @@ public:
 	virtual void init(const T_INPUT &inputs, const T_INPUT &outputs, NeuralNetwork<T, T_SIZE>* network) {
 		this->layers = network->layers();
 		this->network = network;
-		this->first = network->input();
-		this->last = network->output();
+		this->first = network->first();
+		this->last = network->last();
 		this->inputs = inputs;
 		this->outputs = outputs;
 	}

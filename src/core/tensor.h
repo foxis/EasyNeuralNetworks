@@ -105,8 +105,6 @@ public:
 		: tensor(new T[width * height * depth], width, height, depth) {
 		this->_needs_free = true;
 		data.read(this->_data, width * height * depth);
-		Serial.begin(115200);
-
 	}
 	tensor(const tensor<T, T_SIZE>& t) {
 		this->_data = NULL;

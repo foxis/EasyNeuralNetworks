@@ -33,11 +33,6 @@ public:
 
 	DenseLayer(T_INPUT& input, T_SIZE out_width, T_SIZE out_height, T_SIZE out_depth, T_INPUT& weights, const T_ACTIVATION& activation)
 		: DenseLayer(input, out_width, out_height, out_depth, activation) {
-			Serial.println(input.size());
-			Serial.println(this->outputs().size());
-			Serial.println(weights.size());
-			Serial.println(this->weights().size());
-
 		assert(weights.size() == this->weights().size());
 		this->weights(weights);
 	}
@@ -61,7 +56,7 @@ public:
 	virtual void forward()
 	{
 		mat_mul<T, BIAS, T_SIZE, false>(this->outputs(), this->inputs(), this->weights(), this->inputs().size(), this->outputs().size());
-		this->_activation.apply_forward_inplace(this->outputs());
+		this->activation().apply_forward_inplace(this->outputs());
 	}
 
 	virtual void training_begin() {

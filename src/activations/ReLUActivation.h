@@ -9,7 +9,7 @@ template <typename T = ENN_DEFAULT_TYPE, typename T_SIZE = ENN_DEFAULT_SIZE_TYPE
 class ReLUActivation : public ActivationBase<T, T_SIZE> {
 	T _negative_d;
 public:
-	ReLUActivation() { _negative_d = 0; }
+	ReLUActivation() : ReLUActivation(0) {}
 	ReLUActivation(T negative_d) { _negative_d = negative_d; }
 
 	inline virtual T forward(T val) const
