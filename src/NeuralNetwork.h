@@ -1,83 +1,51 @@
 #if !defined(ENN_NEURAL_NETWORK_H)
 #define ENN_NEURAL_NETWORK_H
 
+/// Activations
 #include <activations/LUActivation.h>
 #include <activations/ReLUActivation.h>
 #include <activations/SigmoidActivation.h>
 #include <activations/TanhActivation.h>
 #include <activations/SoftplusActivation.h>
 #include <activations/SoftmaxActivation.h>
+
+/// FF and RNN layers
 #include <layers/InputLayer.h>
 #include <layers/DenseLayer.h>
-#include <layers/DropOutLayer.h>
-#include <layers/DropOutLayer1D.h>
-#include <layers/DropOutLayer2D.h>
 #include <layers/ConvLayer1D.h>
 #include <layers/ConvLayer2D.h>
+#include <layers/RNNLayer.h>
+#include <layers/LSTMLayer.h>
+
+/// Pooling layers
 #include <layers/MaxPoolingLayer1D.h>
 #include <layers/MaxPoolingLayer2D.h>
+#include <layers/AveragePoolingLayer1D.h>
+#include <layers/AveragePoolingLayer2D.h>
 
+/// Misc layers
 #include <layers/ReshapeLayer.h>
 #include <layers/FlattenLayer.h>
 #include <layers/ConcatLayer.h>
 #include <layers/ZeroPaddingLayer1D.h>
 #include <layers/ZeroPaddingLayer2D.h>
 
+/// Dropout layers used for training
+#include <layers/DropOutLayer.h>
+#include <layers/DropOutLayer1D.h>
+#include <layers/DropOutLayer2D.h>
+
+/// Various data types
 #include <core/FixedPointType.h>
+
+/// Loss functions
+#include <core/loss.h>
+
 #include <cstdarg>
 #include <vector>
 #include <stdlib.h>
 
 namespace EasyNeuralNetworks {
-
-#define ENN_T_LOSS_TYPEDEF(T_LOSS_NAME) typedef LossFunctionBase<T, T_SIZE> T_LOSS_NAME;
-
-template<typename T, typename T_SIZE>
-class LossFunctionBase {
-public:
-	virtual T operator () (tensor<T, T_SIZE>& deltas, const tensor<T, T_SIZE>& target, const tensor<T, T_SIZE>& output) const = 0;
-
-	#define ENN_LOSS_LOOP(DELTA, ACC) \
-		T acc = 0;	\
-		assert(deltas.size() == target.size() && deltas.size() == output.size()); \
-		auto num = output.size(); \
-		auto D = deltas.data(); \
-		auto Ta = target.data(); \
-		auto O = output.data(); \
-		while (num--) {	\
-			*D = DELTA;	\
-			acc += ACC;	\
-			++Ta;	\
-			++O;	\
-			++D;	\
-		}	\
-		return acc;
-};
-
-template<typename T, typename T_SIZE = ENN_DEFAULT_SIZE_TYPE>
-class L2Loss : public LossFunctionBase<T, T_SIZE> {
-public:
-	virtual T operator () (tensor<T, T_SIZE>& deltas, const tensor<T, T_SIZE>& target, const tensor<T, T_SIZE>& output) const {
-		ENN_LOSS_LOOP(*O - *Ta, *D * *D)
-	}
-};
-
-template<typename T, typename T_SIZE = ENN_DEFAULT_SIZE_TYPE>
-class L1Loss : public LossFunctionBase<T, T_SIZE> {
-public:
-	virtual T operator () (tensor<T, T_SIZE>& deltas, const tensor<T, T_SIZE>& target, const tensor<T, T_SIZE>& output) const {
-		ENN_LOSS_LOOP((*Ta < *O ? 1 : *Ta > *O ? -1 : 0), abs(*D))
-	}
-};
-
-template<typename T, typename T_SIZE = ENN_DEFAULT_SIZE_TYPE>
-class CrossEntropy : public LossFunctionBase<T, T_SIZE> {
-public:
-	virtual T operator () (tensor<T, T_SIZE>& deltas, const tensor<T, T_SIZE>& target, const tensor<T, T_SIZE>& output) const {
-		ENN_LOSS_LOOP(-*Ta * log10(*O), -*D)
-	}
-};
-
 
 template<typename T, typename T_SIZE = ENN_DEFAULT_SIZE_TYPE>
 class NeuralNetwork;

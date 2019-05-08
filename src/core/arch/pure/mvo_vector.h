@@ -18,6 +18,16 @@ inline void hadamard_product(T * dst, const T * a, const T * b, T_SIZE num, T_SI
 }
 
 template<typename T, typename T_SIZE>
+inline void hadamard_product_add(T * dst, const T * a, const T * b, T_SIZE num, T_SIZE stridea = 1, T_SIZE strideb = 1) {
+	while (num--) {
+		*dst += *a * *b;
+		a += stridea;
+		++dst;
+		b += strideb;
+	}
+}
+
+template<typename T, typename T_SIZE>
 inline void normalize_vec(T * dst, T_SIZE num, T_SIZE stride) {
 	T sum = sqrt(sqrsum_arr(dst, num, stride));
 	while (num--) {

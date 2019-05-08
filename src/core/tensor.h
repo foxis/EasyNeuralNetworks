@@ -17,6 +17,9 @@
 
 namespace EasyNeuralNetworks {
 
+///
+/// implements a three dimentional tensor.
+///
 template<typename T, typename T_SIZE = ENN_DEFAULT_SIZE_TYPE>
 class tensor {
 protected:
@@ -50,6 +53,7 @@ public:
     inline T_TYPE   operator->() const                    { return ptr; }
 		inline iterator_<IS_CONST>  operator+ (T_SIZE v)   const { return ptr + v; }
 		inline void operator >>= (T_SIZE v) { ptr += v; }
+		inline void operator <<= (T_SIZE v) { ptr -= v; }
 
     inline bool      operator==(const iterator_<IS_CONST>& rhs) const { return ptr == rhs.ptr; }
     inline bool      operator!=(const iterator_<IS_CONST>& rhs) const { return ptr != rhs.ptr; }
@@ -125,7 +129,7 @@ public:
 		this->_needs_free = false;
 	}
 
-	// access stuff
+	/// raw access stuff
 	inline T* data() { return _data; }
 	inline T* data(T_SIZE z) { return _data + offset(z); }
 	inline T* data(T_SIZE y, T_SIZE z) { return _data + offset(y, z); }
@@ -136,13 +140,15 @@ public:
 	inline const T* data(T_SIZE y, T_SIZE z) const { return _data + offset(y, z); }
 	inline const T* data(T_SIZE x, T_SIZE y, T_SIZE z) const { return _data + offset(x, y, z); }
 
+	/// convertion to pointer of T* operators. useful for matvecop functions.
 	inline operator T * () { return _data; }
 	inline operator const T* () const { return _data; }
 
+	/// index access operators
 	inline const T& operator [] (int i) const { return _data[i]; }
 	inline T& operator [] (int i) { return _data[i]; }
 
-	// shape stuff
+	/// tensor shape stuff
 	inline T_SIZE width() const { return _width; }
 	inline T_SIZE height() const { return _height; }
 	inline T_SIZE depth() const { return _depth; }
@@ -152,7 +158,7 @@ public:
 	inline T_SIZE offset(T_SIZE y, T_SIZE z) const { return (y + z * _height) * _width; }
 	inline T_SIZE offset(T_SIZE z) const { return z * _width * _height; }
 
-	// iterator stuff
+	/// iterator stuff
 	inline iterator begin(T_SIZE stride) { return iterator(_data, stride); }
 	inline iterator end(T_SIZE stride) { return begin(stride) + size(); }
 
@@ -179,12 +185,28 @@ public:
 	inline const_range iter(T_SIZE y, T_SIZE z, T_SIZE stride) const { return const_range(data(y, z), stride, _width); }
 	inline const_range iter(T_SIZE z, T_SIZE stride) const { return const_range(data(z), stride, _width * _height); }
 
+	/// Obtains a subtensor at depth z with a different depth.
 	inline tensor<T, T_SIZE> window(T_SIZE z, T_SIZE depth) { return tensor<T, T_SIZE>(data(z), _width, _height, depth); }
 	inline tensor<T, T_SIZE> window(T_SIZE z, T_SIZE depth) const { return tensor<T, T_SIZE>(data(z), _width, _height, depth); }
 
+	/// Very dangerous and sometimes useful functions
+	/// that essentially imply, that there are more than one tensor stacked one after another in memory.
+	/// E.g. when we have a tensor(N,M,K) and have a subtensor of (N,M,L), where L < K and K is divisible by L.
+	/// In that case we can have a window of depth=L and slide along depth K of the primary window.
+	inline void operator >>= (T_SIZE v) {
+		assert(_needs_free == false);
+		_data += size() * v;
+	}
+	inline void operator <<= (T_SIZE v) {
+		assert(_needs_free == false);
+		_data -= size() * v;
+	}
+
+	/// indicator whether this tensor object owns the memory
 	inline bool owns() const { return _needs_free; }
 	inline void owns(bool val) { _needs_free = val; }
 
+	/// allows to resize the tensor reallocating the memory if necessary
 	inline void resize(T_SIZE width, T_SIZE height, T_SIZE depth) {
 		if (_data != NULL && _needs_free) {
 			delete[] _data;
@@ -204,6 +226,7 @@ public:
 		resize(src.width(), src.height(), src.depth());
 	}
 
+	/// reshapes the tensor if resulting size is less or equal to the original size
 	inline void reshape(T_SIZE width, T_SIZE height, T_SIZE depth) {
 		assert(width * height * depth <= size());
 		_width = width;
@@ -215,6 +238,9 @@ public:
 		reshape(src.width(), src.height(), src.depth());
 	}
 
+	/// clones this tensor and returns a tensor object, that does not own the memory.
+	/// NOTE: this is dangerous, since memory is without ownership. owns must be explicitly set
+	/// after call to clone.
 	inline tensor<T, T_SIZE> clone(bool copy=true) const {
 		tensor<T, T_SIZE> tmp(width(), height(), depth());
 		if (copy)
@@ -223,6 +249,7 @@ public:
 		return tmp;
 	}
 
+	/// creates a new tensor object from this one and returns a pointer to it.
 	inline tensor<T, T_SIZE>* clone_new(bool copy=true) const {
 		tensor<T, T_SIZE> *tmp = new tensor<T, T_SIZE>(width(), height(), depth());
 		if (copy)
@@ -230,6 +257,8 @@ public:
 		return tmp;
 	}
 
+	/// fills the tensor with specific value.
+	/// NOTE: for performance reasons filling with 0 will use memset.
 	inline void fill(T val) {
 		auto N = size();
 		auto p = data();
@@ -263,6 +292,7 @@ public:
 			*(p++) = val;
 	}
 
+	/// will call a function on each element. basically doing Ai = f(Ai)
 	inline void map(std::function<T (T_SIZE idx, T val, void * params)> setter, void * params = NULL) {
 		auto N = size();
 		auto p = data();
@@ -272,16 +302,19 @@ public:
 		}
 	}
 
+	/// copy data from a pointer. size of data is equal to the size of this tensor
 	inline void copy(const T * src, T_SIZE stride=1) {
 		memcpy(data(), src, sizeof(T) * size());
 	}
 
+	/// copy data from a tensor. size of data copied is equal to the size of this tensor
 	inline void copy(const tensor<T, T_SIZE>& src, T_SIZE stride=1) {
 		assert(size() == src.size());
 
 		copy(src.data(), stride);
 	}
 
+	/// will copy data from a tensor starting at depth z_offset.
 	inline void copy_from(const tensor<T, T_SIZE>& src, T_SIZE z_offset) {
 		assert(width() == src.width() && height() == src.height());
 		assert((depth() + z_offset) <= src.depth());
@@ -290,6 +323,10 @@ public:
 	}
 };
 
+
+///
+/// Implements a static tensor of preset size.
+///
 template<typename T, size_t width, size_t height, size_t depth, typename T_SIZE = ENN_DEFAULT_SIZE_TYPE>
 class static_tensor : public tensor<T, T_SIZE> {
 	T _arr[width * height * depth];

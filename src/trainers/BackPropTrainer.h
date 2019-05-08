@@ -56,7 +56,7 @@ public:
 		for (auto L : this->layers) {
 			L->training_begin();
 
-			if (W_INIT != ENN_WEIGHTS_NONE) {
+			if (W_INIT != ENN_WEIGHTS_NONE && L->trainable()) {
 				// initialize weights
 				auto I = L->weights().begin(1);
 				auto num = L->weights().size();

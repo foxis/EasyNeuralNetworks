@@ -9,7 +9,7 @@ namespace EasyNeuralNetworks {
 
 
 template<typename T, typename T_SIZE, bool TRANSPOSED>
-inline void convolve_1d_add(T * dst, const T * vec, const T * kernel, T_SIZE N, T_SIZE M, T_SIZE stride) {
+void convolve_1d_add(T * dst, const T * vec, const T * kernel, T_SIZE N, T_SIZE M, T_SIZE stride) {
 	// vector is N
 	// kernel is M
 	// FIXME use fast algorithm for forward calculation
@@ -39,7 +39,7 @@ inline void convolve_1d_add(T * dst, const T * vec, const T * kernel, T_SIZE N, 
 }
 
 template<typename T, typename T_SIZE, bool TRANSPOSED>
-inline void convolve_2d_add(T * dst, const T * mat, const T * kernel, T_SIZE N, T_SIZE M, T_SIZE K, T_SIZE L, T_SIZE stride) {
+void convolve_2d_add(T * dst, const T * mat, const T * kernel, T_SIZE N, T_SIZE M, T_SIZE K, T_SIZE L, T_SIZE stride) {
 	// matrix is NxM
 	// kernel is KxL
 	//
