@@ -38,3 +38,10 @@ print(intermediate_layer_model.predict(training_data1))
 print(intermediate_layer_model.predict(training_data2))
 print(intermediate_layer_model.predict(training_data3))
 print(intermediate_layer_model.predict(training_data4))
+
+from datetime import datetime, timedelta
+import json
+import requests
+import sys
+
+
